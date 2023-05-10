@@ -1,9 +1,9 @@
 import telebot
 import quora
+import os
 
-
-BOT_TOKEN = '6137454766:AAE_ou6w8CMuJDDAaY90R8HVPRBRJsnLhoI'
-POE_TOKEN = 'ETg9W9Ij8yE1AnGpBMrQzg%3D%3D'
+BOT_TOKEN=os.environ['BOT_TOKEN']
+POE_TOKEN=os.environ['POE_TOKEN']
 bot = telebot.TeleBot(BOT_TOKEN)
 models = {
     'sage'   : 'capybara',
