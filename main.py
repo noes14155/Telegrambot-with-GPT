@@ -32,12 +32,14 @@ if BOT_TOKEN == "":
    exit
 
 #function takes user prompt and poe model name, returns chat response
-def stream(prompt,model):     
+def stream(prompt,model): 
+        text = ''    
         if api_name == 'quora':          
-          response = quora.Completion.create(model=model,
-                                             prompt=prompt,
-                                             token=POE_TOKEN)
-          text = response.text
+          for response in quora.StreamingCompletion.create(model=model,
+                                                      prompt=prompt,
+                                                      token=POE_TOKEN):
+            #print(response.text, flush=True)
+            text += str(response.text)
           return text
 '''
 def process_image(url):
@@ -73,7 +75,7 @@ def changebot_handler(message):
     bot.send_message(message.chat.id,'Currently'+i+'is active'+' (gpt-4 and claude-v1.2 requires a paid subscription)', reply_markup=inline_kb)
 #Messages other than commands handled 
 @bot.message_handler(func=lambda message: True)
-def reply_handler(message):
+def reply_handler(update):
     '''
     image_caption = ""
     if message.attachments:
@@ -82,7 +84,12 @@ def reply_handler(message):
                 #caption =  process_image(attachment.url)
                 break
     '''
-    text = stream(message.text,model)
-    bot.send_message(message.chat.id,text)
+    # Send "typing" action  
+    bot.send_chat_action(update.chat.id, "typing")
+    try:
+        text = stream(update.text,model)
+    except: 
+        text = "Sorry, I'm having issues."
+    bot.send_message(update.chat.id,text)
 bot.infinity_polling()
 
