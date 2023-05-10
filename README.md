@@ -1,6 +1,6 @@
 # Telegrambot-with-GPT4free
 Simple telegram bot with GPT4free https://github.com/xtekky/gpt4free   
-And poe-api by https://github.com/ading2210/poe-api
+And poe-api by https://github.com/ading2210/poe-api    
 Currently only supports poe.com   
 Supports multiple bots   
 
