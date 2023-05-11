@@ -12,9 +12,9 @@ Add forefront
 ## Install
 
 
-Download or clone this repository
-Change environment variables in .env file. [Environment Variables](Environment Variables)
-install the requirements 
+Download or clone this repository   
+Change environment variables in .env file. [Environment Variables](#Environment Variables)   
+install the requirements    
 ```
 pip install -r requirements.txt
 ```
