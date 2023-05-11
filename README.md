@@ -13,7 +13,7 @@ Add forefront
 
 
 Download or clone this repository   
-Change environment variables in .env file. [Environment Variables](#Environment Variables)   
+Change environment variables in .env file. [Environment Variables](#environment-variables)   
 install the requirements    
 ```
 pip install -r requirements.txt
