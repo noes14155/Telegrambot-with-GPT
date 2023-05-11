@@ -1,12 +1,12 @@
 # Telegrambot-with-GPT4free
-Simple telegram bot with GPT4free https://github.com/xtekky/gpt4free   
-And poe-api by https://github.com/ading2210/poe-api       
-Currently only supports poe.com   
-Supports multiple bots   
+Simple telegram bot with [GPT4free](https://github.com/xtekky/gpt4free)   
+Thanks to [xtekky](https://github.com/xtekky)  
+Supports poe.com, thb.ai, you.com   
+Supports multiple bots in poe.com   
 
    
 To do   
-Add you.com   
+Add usesless   
 Add forefront    
 
 ## Install

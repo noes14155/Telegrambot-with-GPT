@@ -22,7 +22,7 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['quora','you','theb','usesless']
+providers = ['quora','you','theb','usesless','forefront']
 #headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 api_name = 'you'
 model = 'ChatGPT'   
@@ -48,6 +48,15 @@ def stream(prompt,model,api_name):
         elif api_name == 'theb':
             for token in theb.Completion.create(prompt):
                 text += token
+        elif api_name == 'forefront':
+            api_name = 'you'
+            text = 'Not yet implemented. Changing provider to you'
+        elif api_name == 'usesless':
+            api_name = 'you'
+            text = 'Not yet implemented. Changing provider to you'
+        else:
+            api_name = 'you'
+            text = 'Something went wrong. Changing provider to you'
         return text
 '''
 def process_image(url):
