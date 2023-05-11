@@ -23,7 +23,10 @@ Run main.py
 python main.py
 ```
 ## Docker
-
+Build
+```
+docker build --pull --rm -f "Dockerfile" -t telebottest:latest "." 
+```
 Docker-compose
 ```
 docker-compose up --build -d
