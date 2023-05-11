@@ -43,7 +43,6 @@ def stream(prompt,model,api_name):
         elif api_name == 'you':
           response = you.Completion.create(prompt=prompt, detailed=True, include_links=True)
           text = response.text
-          print(text)
         return text
 '''
 def process_image(url):
@@ -61,7 +60,6 @@ def option_selector(call):
         global api_name
         api_name=str(call.data)
         bot.send_message( call.message.chat.id,api_name+' is active')
-        print(api_name)
     elif call.data in models:
         global model
         model = str(call.data)
@@ -81,7 +79,6 @@ def help_handler(update):
 #changebot command handler
 @bot.message_handler(commands=['changebot'])
 def changebot_handler(message):
-    print(api_name)
     if api_name != 'quora':
         bot.send_message(message.chat.id,'changebot command only available for poe')
         return
