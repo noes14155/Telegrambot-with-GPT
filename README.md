@@ -25,7 +25,7 @@ python main.py
 ## Docker
 Build
 ```
-docker build --pull --rm -f "Dockerfile" -t telebottest:latest "." 
+docker build -t telegrambot_gpt4free:latest "." 
 ```
 Docker-compose
 ```
