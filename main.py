@@ -1,5 +1,6 @@
 import telebot
 from gpt4free import quora
+from gpt4free import you
 import os
 import requests
 
@@ -19,10 +20,9 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-
+providers = ['quora','you']
 #headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-
-api_name = 'quora'
+api_name = 'you'
 model = 'ChatGPT'   
 if POE_TOKEN == "":
    print('No POE-TOKEN found! Add it in your env file')
@@ -32,7 +32,7 @@ if BOT_TOKEN == "":
    exit
 
 #function takes user prompt and poe model name, returns chat response
-def stream(prompt,model): 
+def stream(prompt,model,api_name): 
         text = ''    
         if api_name == 'quora':          
           for response in quora.StreamingCompletion.create(model=model,
@@ -40,7 +40,11 @@ def stream(prompt,model):
                                                       token=POE_TOKEN):
             #print(response.text, flush=True)
             text += str(response.text)
-          return text
+        elif api_name == 'you':
+          response = you.Completion.create(prompt=prompt, detailed=True, include_links=True)
+          text = response.text
+          print(text)
+        return text
 '''
 def process_image(url):
     with open(url, "rb") as f:
@@ -50,15 +54,24 @@ def process_image(url):
     caption = response.json()["captions"]
     return caption
 '''
-#selecting model handler
+#selecting provider or model for quora handler
 @bot.callback_query_handler(func=lambda call: True)
-def model_selector(message):
-    model=message.data
-    bot.send_message( message.message.chat.id,model+' is active')
+def option_selector(call):
+    if call.data in providers:
+        global api_name
+        api_name=str(call.data)
+        bot.send_message( call.message.chat.id,api_name+' is active')
+        print(api_name)
+    elif call.data in models:
+        global model
+        model = str(call.data)
+        bot.send_message( call.message.chat.id,model+' is active')
+
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
 def start_handler(update):
-    bot.send_message(update.chat.id, text="Hello, Welcome to GPT4free")
+    bot.send_message(update.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
+                     "\nUse command /changeprovider or /changebot to change to a different bot")
 #help command handler
 @bot.message_handler(commands=['help'])
 def help_handler(update):
@@ -68,11 +81,25 @@ def help_handler(update):
 #changebot command handler
 @bot.message_handler(commands=['changebot'])
 def changebot_handler(message):
-    inline_kb = telebot.types.InlineKeyboardMarkup() 
+    print(api_name)
+    if api_name != 'quora':
+        bot.send_message(message.chat.id,'changebot command only available for poe')
+        return
+    _models = telebot.types.InlineKeyboardMarkup() 
     #making buttons with the model dictionary 
     for i in models:
-        inline_kb.add(telebot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
-    bot.send_message(message.chat.id,'Currently'+i+'is active'+' (gpt-4 and claude-v1.2 requires a paid subscription)', reply_markup=inline_kb)
+        _models.add(telebot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
+    bot.send_message(message.chat.id,'Currently '+model+' is active'+\
+                     ' (gpt-4 and claude-v1.2 requires a paid subscription)', reply_markup=_models)
+#changeprovider command handler
+@bot.message_handler(commands=['changeprovider'])
+def changeprovider_handler(message):
+    #making buttons with the model dictionary 
+    _providers = telebot.types.InlineKeyboardMarkup()
+    for i in providers:
+        _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
+    bot.send_message(message.chat.id,'Currently '+api_name+' is active', reply_markup=_providers)
+
 #Messages other than commands handled 
 @bot.message_handler(func=lambda message: True)
 def reply_handler(update):
@@ -87,7 +114,7 @@ def reply_handler(update):
     # Send "typing" action  
     bot.send_chat_action(update.chat.id, "typing")
     try:
-        text = stream(update.text,model)
+        text = stream(update.text,model,api_name)
     except: 
         text = "Sorry, I'm having issues."
     bot.send_message(update.chat.id,text)
