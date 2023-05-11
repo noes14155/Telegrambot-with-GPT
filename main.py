@@ -1,6 +1,8 @@
 import telebot
 from gpt4free import quora
 from gpt4free import you
+from gpt4free import theb
+from gpt4free import usesless
 import os
 import requests
 
@@ -20,7 +22,7 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['quora','you']
+providers = ['quora','you','theb','usesless']
 #headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 api_name = 'you'
 model = 'ChatGPT'   
@@ -43,6 +45,9 @@ def stream(prompt,model,api_name):
         elif api_name == 'you':
           response = you.Completion.create(prompt=prompt, detailed=True, include_links=True)
           text = response.text
+        elif api_name == 'theb':
+            for token in theb.Completion.create(prompt):
+                text += token
         return text
 '''
 def process_image(url):
