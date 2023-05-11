@@ -13,7 +13,7 @@ Add forefront
 
 
 Download or clone this repository
-change environment variables in .env file
+Change environment variables in .env file. [Environment Variables](Environment Variables)
 install the requirements 
 ```
 pip install -r requirements.txt
@@ -36,7 +36,7 @@ docker-compose up --build -d
 
 ## Environment Variables
 
-To run this project, you will need to add the following environment variables to your .env file
+To run this project, you will need to create a .env file and add the following environment variables   
 
 `BOT_TOKEN`
 Get this by messaging @botfather Refer to https://core.telegram.org/bots/tutorial#obtain-your-bot-token
