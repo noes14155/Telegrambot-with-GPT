@@ -1,10 +1,15 @@
-FROM python:3.10-slim-buster
+FROM python:3.10
 
 WORKDIR /app
-RUN apt-get update -y
-RUN apt-get install ffmpeg -y
-COPY requirements.txt requirements.txt
-RUN pip install -r requirements.txt
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg \
+ && apt-get -y clean \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt /tmp
+RUN pip install --upgrade pip \
+ && pip install -r /tmp/requirements.txt \
+ && rm /tmp/requirements.txt
 COPY . .
 
 
