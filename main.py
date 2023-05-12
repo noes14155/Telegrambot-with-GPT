@@ -12,7 +12,7 @@ POE_TOKEN=os.environ['POE_TOKEN']
 #HG_API = os.environ[HG_API]
 #Create new instance of bot
 bot = telebot.TeleBot(BOT_TOKEN)
-#models avaiable a poe.com
+#models avaiable at poe.com
 models = {
     'Sage': 'capybara',
     'GPT-4': 'beaver',
@@ -26,9 +26,7 @@ providers = ['quora','you','theb','usesless','forefront']
 #headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 api_name = 'you'
 model = 'ChatGPT'   
-if POE_TOKEN == "":
-   print('No POE-TOKEN found! Add it in your env file')
-   exit
+
 if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
@@ -73,6 +71,11 @@ def option_selector(call):
     if call.data in providers:
         global api_name
         api_name=str(call.data)
+        if api_name == 'quora':
+            if POE_TOKEN == "":
+                bot.send_message( call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
+                                 Reverting to you.com')
+                api_name='you'
         bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         global model
@@ -88,6 +91,7 @@ def start_handler(update):
 @bot.message_handler(commands=['help'])
 def help_handler(update):
     bot.send_message(update.chat.id, text="/start : starts the bot\n\
+    /changeprovider : change provider of the bot\n\
     /changebot : change to available bots in poe.com\n\
     /help : list all commands")
 #changebot command handler
