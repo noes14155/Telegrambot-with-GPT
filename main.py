@@ -23,8 +23,9 @@ models = {
     'NeevaAI': 'hutia',
 }
 providers = ['quora','you','theb','usesless','forefront']
+_missingpoetoken = ['Add now','Later']
 #headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-api_name = 'you'
+api_name = 'quora'
 model = 'ChatGPT'   
 
 if BOT_TOKEN == "":
@@ -32,21 +33,37 @@ if BOT_TOKEN == "":
    exit
 
 #function takes user prompt and poe model name, returns chat response
-def stream(prompt,model,api_name): 
+def stream(call,model,api_name): 
         text = ''    
-        if api_name == 'quora':          
+        if api_name == 'quora': 
+          if POE_TOKEN == "":   
+                _missing_poe_token(call)     
+                return
           for response in quora.StreamingCompletion.create(model=model,
-                                                      prompt=prompt,
+                                                      prompt=call.text,
                                                       token=POE_TOKEN):
             #print(response.text, flush=True)
             text += str(response.text)
         elif api_name == 'you':
-          response = you.Completion.create(prompt=prompt, detailed=True, include_links=True)
+          response = you.Completion.create(prompt=call.text, detailed=True, include_links=True)
           text = response.text
         elif api_name == 'theb':
-            for token in theb.Completion.create(prompt):
+            for token in theb.Completion.create(call.text):
                 text += token
         return text
+#Missing poe token handler function
+def _missing_poe_token(call):
+                _poe_token_buttons = telebot.types.InlineKeyboardMarkup() 
+                for i in _missingpoetoken:
+                    _poe_token_buttons.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
+                bot.send_message(call.chat.id,'POE-TOKEN is missing would you like to add now?'\
+                                 , reply_markup=_poe_token_buttons)
+                return
+def handle_poe_token(message):
+    bot.send_message(chat_id=message.chat.id, text='You entered: ' + message.text)
+    global POE_TOKEN
+    POE_TOKEN = str(message.text)
+
 '''
 def process_image(url):
     with open(url, "rb") as f:
@@ -56,17 +73,26 @@ def process_image(url):
     caption = response.json()["captions"]
     return caption
 '''
-#selecting provider or model for quora handler
+#funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 def option_selector(call):
-    if call.data in providers:
-        global api_name
+    global api_name
+    global model
+    if call.data in _missingpoetoken:
+        if str(call.data) == 'Add now':
+            bot.send_message(call.message.chat.id,'OK Sign up to Poe and head over to the site ctrl+shift+i\
+                            to open developer console Go to Application -> Cookies -> https://poe.com \
+                            Find the p-b cookie and copy its value, this will be your Poe-token. -> Enter it here')
+            bot.register_next_step_handler(call.message, handle_poe_token)
+        elif str(call.data) == 'Later':
+            bot.send_message( call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
+                                 Reverting to you.com')
+            api_name='you'
+    if call.data in providers:        
         api_name=str(call.data)
         if api_name == 'quora':
             if POE_TOKEN == "":
-                bot.send_message( call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
-                                 Reverting to you.com')
-                api_name='you'
+                _missing_poe_token(call.message)
                 return
         elif api_name == 'forefront':
             api_name = 'you'
@@ -85,7 +111,6 @@ def option_selector(call):
             return
         bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
-        global model
         model = str(call.data)
         bot.send_message( call.message.chat.id,model+' is active')
 
@@ -93,7 +118,8 @@ def option_selector(call):
 @bot.message_handler(commands=['hello', 'start'])
 def start_handler(update):
     bot.send_message(update.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
-                     "\nUse command /changeprovider or /changebot to change to a different bot")
+                     "\nUse command /changeprovider or /changebot to change to a different bot\n\
+                        Ask me anything I am here to help you.")
 #help command handler
 @bot.message_handler(commands=['help'])
 def help_handler(update):
@@ -121,10 +147,9 @@ def changeprovider_handler(message):
     for i in providers:
         _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
     bot.send_message(message.chat.id,'Currently '+api_name+' is active', reply_markup=_providers)
-
 #Messages other than commands handled 
-@bot.message_handler(func=lambda message: True)
-def reply_handler(update):
+@bot.message_handler(func=lambda call: True)
+def reply_handler(call):
     '''
     image_caption = ""
     if message.attachments:
@@ -134,11 +159,14 @@ def reply_handler(update):
                 break
     '''
     # Send "typing" action  
-    bot.send_chat_action(update.chat.id, "typing")
+    bot.send_chat_action(call.chat.id, "typing")
     try:
-        text = stream(update.text,model,api_name)
-    except: 
-        text = "Sorry, I'm having issues."
-    bot.send_message(update.chat.id,text)
+        text = stream(call,model,api_name)
+    except RuntimeError as error: 
+        if " ".join(str(error).split()[:3]) == "Daily limit reached":
+            text = "Daily Limit reached for current bot. please use another bot or another provider"
+        else:
+            text = str(error)
+    bot.send_message(call.chat.id,text)
 bot.infinity_polling()
 
