@@ -42,6 +42,7 @@ To run this project, you will need to create a .env file and add the following e
 Get this by messaging @botfather Refer to https://core.telegram.org/bots/tutorial#obtain-your-bot-token
 
 `POE_TOKEN`
+Not mandatory (leave it blank if you don't want to use quora(poe.com))
 Sign up to Poe and head over to the site
 ctrl+shift+i to open developer console
 Go to Application -> Cookies -> https://poe.com
