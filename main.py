@@ -46,15 +46,6 @@ def stream(prompt,model,api_name):
         elif api_name == 'theb':
             for token in theb.Completion.create(prompt):
                 text += token
-        elif api_name == 'forefront':
-            api_name = 'you'
-            text = 'Not yet implemented. Changing provider to you'
-        elif api_name == 'usesless':
-            api_name = 'you'
-            text = 'Not yet implemented. Changing provider to you'
-        else:
-            api_name = 'you'
-            text = 'Something went wrong. Changing provider to you'
         return text
 '''
 def process_image(url):
@@ -76,6 +67,22 @@ def option_selector(call):
                 bot.send_message( call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
                                  Reverting to you.com')
                 api_name='you'
+                return
+        elif api_name == 'forefront':
+            api_name = 'you'
+            text = 'Not yet implemented. Changing provider to you'
+            bot.send_message( call.message.chat.id,text)
+            return
+        elif api_name == 'usesless':
+            api_name = 'you'
+            text = 'Not yet implemented. Changing provider to you'
+            bot.send_message( call.message.chat.id,text)
+            return
+        else:
+            api_name = 'you'
+            text = 'Something went wrong. Changing provider to you'
+            bot.send_message( call.message.chat.id,text)
+            return
         bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         global model
@@ -90,7 +97,7 @@ def start_handler(update):
 #help command handler
 @bot.message_handler(commands=['help'])
 def help_handler(update):
-    bot.send_message(update.chat.id, text="/start : starts the bot\n\
+    bot.send_message(update.chat.id, text="  /start : starts the bot\n\
     /changeprovider : change provider of the bot\n\
     /changebot : change to available bots in poe.com\n\
     /help : list all commands")
