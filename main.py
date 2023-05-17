@@ -1,3 +1,4 @@
+import json
 import telebot
 from gpt4free import quora
 from gpt4free import you
@@ -8,8 +9,10 @@ import requests
 
 BOT_TOKEN=os.environ['BOT_TOKEN']
 POE_TOKEN=os.environ['POE_TOKEN']
-#HG_TOKEN = os.environ['HG_TOKEN']
+HG_TOKEN = os.environ['HG_TOKEN']
 #HG_API = os.environ[HG_API]
+HG_img2text = "https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning"
+HG_text2img = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
 #Create new instance of bot
 bot = telebot.TeleBot(BOT_TOKEN)
 #models avaiable at poe.com
@@ -22,9 +25,9 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['quora','you','theb','usesless','forefront']
+providers = ['quora','you','theb','usesless','forefront','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
-#headers = {"Authorization": f"Bearer {HG_TOKEN}"}
+headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 api_name = 'quora'
 model = 'ChatGPT'   
 
@@ -50,6 +53,20 @@ def stream(call,model,api_name):
         elif api_name == 'theb':
             for token in theb.Completion.create(call.text):
                 text += token
+        elif api_name == 'Stable Diffusion(generate image)':
+            headers = {"Authorization": f"Bearer {HG_TOKEN}",\
+                        "Content-Type": "application/json"}
+            data = {"inputs": call.text}
+            json_data = json.dumps(data)
+            response = requests.post(HG_text2img, headers=headers, data=json_data)
+            # Handle the response from the API
+            if response.status_code == 200:
+                result = response.json()
+                #image_data = result['generated_images'][0]['data']
+                print(result)
+                return 'image'
+            else:
+                return response.content
         return text
 #Missing poe token handler function
 def _missing_poe_token(call):
@@ -64,15 +81,21 @@ def handle_poe_token(message):
     global POE_TOKEN
     POE_TOKEN = str(message.text)
 
-'''
+
 def process_image(url):
-    with open(url, "rb") as f:
-        image = f.read()
+    #with open(url, "rb") as f:
+    image = requests.get(url)
     # Make POST request to API
-    response = requests.post(HG_API, headers=headers, data=image)  
-    caption = response.json()["captions"]
-    return caption
-'''
+    response = requests.post(HG_img2text, headers=headers, data=image) 
+    # Handle the response from the API
+    if response.status_code == 200:
+        # Success
+        result = response.json()
+    else:
+        # Error
+        return response.content
+    return 'This image looks like a '+result[0]['generated_text']
+
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 def option_selector(call):
@@ -102,11 +125,6 @@ def option_selector(call):
         elif api_name == 'usesless':
             api_name = 'you'
             text = 'Not yet implemented. Changing provider to you'
-            bot.send_message( call.message.chat.id,text)
-            return
-        else:
-            api_name = 'you'
-            text = 'Something went wrong. Changing provider to you'
             bot.send_message( call.message.chat.id,text)
             return
         bot.send_message( call.message.chat.id,api_name+' is active')
@@ -148,16 +166,8 @@ def changeprovider_handler(message):
         _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
     bot.send_message(message.chat.id,'Currently '+api_name+' is active', reply_markup=_providers)
 #Messages other than commands handled 
-@bot.message_handler(func=lambda call: True)
+@bot.message_handler(content_types='text')
 def reply_handler(call):
-    '''
-    image_caption = ""
-    if message.attachments:
-        for attachment in message.attachments:
-            if attachment.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp', 'webp')):
-                #caption =  process_image(attachment.url)
-                break
-    '''
     # Send "typing" action  
     bot.send_chat_action(call.chat.id, "typing")
     try:
@@ -168,5 +178,16 @@ def reply_handler(call):
         else:
             text = str(error)
     bot.send_message(call.chat.id,text)
+#Messages with image 
+@bot.message_handler(content_types='photo')
+def image_handler(call):
+        # Send "typing" action  
+        file_id = call.photo[-1].file_id
+        file_info = bot.get_file(file_id)
+        file_path = file_info.file_path
+        image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_path}"
+        #bot.send_message(chat_id=call.chat.id, text='Thanks for the image! Here is the image URL: ' + image_url)   
+        text = process_image(image_url)
+        bot.send_message(call.chat.id,text)
 bot.infinity_polling()
 

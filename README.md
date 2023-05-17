@@ -48,3 +48,5 @@ ctrl+shift+i to open developer console
 Go to Application -> Cookies -> https://poe.com
 Find the p-b cookie and copy its value, this will be your Poe-token
 
+`HG_TOKEN`
+Sign up on hugging face and get the token from [here](https://huggingface.co/settings/tokens)
