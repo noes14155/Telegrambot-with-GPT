@@ -7,8 +7,8 @@ from gpt4free import usesless
 import os
 import requests
 
-BOT_TOKEN=os.environ['BOT_TOKEN']
-POE_TOKEN=os.environ['POE_TOKEN']
+BOT_TOKEN = os.environ['BOT_TOKEN']
+POE_TOKEN = os.environ['POE_TOKEN']
 HG_TOKEN = os.environ['HG_TOKEN']
 #HG_API = os.environ[HG_API]
 HG_img2text = "https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning"
@@ -35,7 +35,7 @@ if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
 
-#function takes user prompt and poe model name, returns chat response
+#function takes user prompt, poe model name, provider name returns chat response
 def stream(call,model,api_name): 
         text = ''    
         if api_name == 'quora': 
@@ -45,7 +45,6 @@ def stream(call,model,api_name):
           for response in quora.StreamingCompletion.create(model=model,
                                                       prompt=call.text,
                                                       token=POE_TOKEN):
-            #print(response.text, flush=True)
             text += str(response.text)
         elif api_name == 'you':
           response = you.Completion.create(prompt=call.text, detailed=True, include_links=True)
