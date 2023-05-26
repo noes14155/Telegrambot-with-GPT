@@ -3,6 +3,14 @@ Simple telegram bot with [GPT4free](https://github.com/xtekky/gpt4free)
 Thanks to [xtekky](https://github.com/xtekky)  
 Supports poe.com, thb.ai, you.com   
 Supports multiple bots in poe.com   
+Hugging face token is only required for image captioning.    
+Text to image (stable diffusion) uses hugging face hosted space feel free to change to your own space   
+'''
+HG_img2text = 'https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning'    
+HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'     
+'''
+line 15 and 16 in main.py
+
 
    
 To do   

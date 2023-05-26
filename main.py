@@ -12,8 +12,8 @@ BOT_TOKEN = os.environ['BOT_TOKEN']
 POE_TOKEN = os.environ['POE_TOKEN']
 HG_TOKEN = os.environ['HG_TOKEN']
 #HG_API = os.environ[HG_API]
-HG_img2text = "https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning"
-HG_text2img = "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5"
+HG_img2text = 'https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning'
+HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'
 #Create new instance of bot
 bot = telebot.TeleBot(BOT_TOKEN)
 #models avaiable at poe.com
@@ -54,7 +54,7 @@ def stream(call,model,api_name):
             for token in theb.Completion.create(call.text):
                 text += token
         elif api_name == 'Stable Diffusion(generate image)':
-            client = Client("https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/")
+            client = Client(HG_text2img)
             text = client.predict(call.text,api_name="/predict")
             
             
