@@ -29,7 +29,7 @@ models = {
 providers = ['quora','you','theb','usesless','forefront','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-api_name = 'Stable Diffusion(generate image)'
+api_name = 'you'
 model = 'ChatGPT'   
 
 if BOT_TOKEN == "":

@@ -18,3 +18,4 @@ Levenshtein
 retrying
 mailgw_temporary_email
 pycryptodome
+gradio_client
