@@ -1,4 +1,4 @@
-import json
+
 import telebot
 from gpt4free import quora
 from gpt4free import you
@@ -6,6 +6,7 @@ from gpt4free import theb
 from gpt4free import usesless
 import os
 import requests
+from gradio_client import Client
 
 BOT_TOKEN = os.environ['BOT_TOKEN']
 POE_TOKEN = os.environ['POE_TOKEN']
@@ -28,7 +29,7 @@ models = {
 providers = ['quora','you','theb','usesless','forefront','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-api_name = 'quora'
+api_name = 'Stable Diffusion(generate image)'
 model = 'ChatGPT'   
 
 if BOT_TOKEN == "":
@@ -53,19 +54,10 @@ def stream(call,model,api_name):
             for token in theb.Completion.create(call.text):
                 text += token
         elif api_name == 'Stable Diffusion(generate image)':
-            headers = {"Authorization": f"Bearer {HG_TOKEN}",\
-                        "Content-Type": "application/json"}
-            data = {"inputs": call.text}
-            json_data = json.dumps(data)
-            response = requests.post(HG_text2img, headers=headers, data=json_data)
-            # Handle the response from the API
-            if response.status_code == 200:
-                result = response.json()
-                #image_data = result['generated_images'][0]['data']
-                print(result)
-                return 'image'
-            else:
-                return response.content
+            client = Client("https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/")
+            text = client.predict(call.text,api_name="/predict")
+            
+            
         return text
 #Missing poe token handler function
 def _missing_poe_token(call):
@@ -169,6 +161,8 @@ def changeprovider_handler(message):
 def reply_handler(call):
     # Send "typing" action  
     bot.send_chat_action(call.chat.id, "typing")
+    sent = bot.send_message(call.chat.id, "Please wait while i think")
+    message_id = sent.message_id
     try:
         text = stream(call,model,api_name)
     except RuntimeError as error: 
@@ -176,7 +170,12 @@ def reply_handler(call):
             text = "Daily Limit reached for current bot. please use another bot or another provider"
         else:
             text = str(error)
-    bot.send_message(call.chat.id,text)
+    if api_name == 'Stable Diffusion(generate image)':
+        bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))
+        bot.edit_message_text(chat_id=call.chat.id, message_id=message_id, text="Image Generated")      
+    else:
+        bot.delete_message(chat_id=call.chat.id, message_id=message_id)
+        bot.send_message(call.chat.id,text)
 #Messages with image 
 @bot.message_handler(content_types='photo')
 def image_handler(call):
