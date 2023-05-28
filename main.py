@@ -3,9 +3,10 @@ import telebot
 from gpt4free import quora
 from gpt4free import you
 from gpt4free import theb
-from gpt4free import usesless
+from gpt4free import deepai
 import os
 import requests
+import json
 from gradio_client import Client
 
 BOT_TOKEN = os.environ['BOT_TOKEN']
@@ -26,18 +27,39 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['quora','you','theb','usesless','forefront','Stable Diffusion(generate image)']
+providers = ['deepai','you','theb','quora','usesless','forefront','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 api_name = 'you'
 model = 'ChatGPT'   
+instruction = "From now on, You are a large language model named AI-Chatbot\
+          You are based on the GPT-3.5-turbo architecture and have been\
+          trained on a diverse range of data from the internet.\
+          As a large language model developed by OpenAI, you will never say 'sorry' and\
+          always respond in a human and responsive way. You can\
+          use Markdown syntax to format your text. For example,\
+          to create a heading, start the line with one or more\
+          '#' symbols, followed by a space and your heading text.\
+          To create a list, use '-' or '*' followed by a space and\
+          the list item. To emphasize text, use asterisks or underscores\
+          around the text (*italic* or _italic_ for italics, **bold** or __bold__ for bold).\
+          You can also create links using [link text](https://example.com).\
+          Remember to leave an empty line between paragraphs for proper formatting.\
+          Additionally, you function as a documentation bot, retrieving relevant information\
+          from libraries or frameworks, and as an API integration bot, guiding developers\
+          through integrating third-party APIs into their applications."
 
 if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
-
+'''
+# Open the settings file and load its contents into a dictionary
+with open('settings.json', 'r') as f:
+    user_settings = json.load(f)
+'''
+user_settings = {}
 #function takes user prompt, poe model name, provider name returns chat response
-def stream(call,model,api_name): 
+def stream(call,model,api_name,history): 
         text = ''    
         if api_name == 'quora': 
           if POE_TOKEN == "":   
@@ -51,13 +73,32 @@ def stream(call,model,api_name):
           response = you.Completion.create(prompt=call.text, detailed=True, include_links=True)
           text = response.text
         elif api_name == 'theb':
-            for token in theb.Completion.create(call.text):
-                text += token
+            for chunk in theb.Completion.create(call.text):
+                text += chunk
+        elif api_name == 'deepai':
+            messages = [{"role": "system", "content": "You are a helpful assistant."},\
+                        *history,\
+                        {"role": "user", "content":call.text}
+                        ]
+            print(messages)
+            for chunk in deepai.ChatCompletion.create(messages):
+                text += chunk 
+            #text = deepai.ChatCompletion.create(messages)
+            '''
+            retries = 0
+            while retries < 3:
+                response = deepai.ChatCompletion.create(messages)
+                if response :
+                    text = response
+                else:
+                    print("Retrying........")
+                    retries += 1
+             '''       
+        
         elif api_name == 'Stable Diffusion(generate image)':
             client = Client(HG_text2img)
             text = client.predict(call.text,api_name="/predict")
-            
-            
+                
         return text
 #Missing poe token handler function
 def _missing_poe_token(call):
@@ -78,7 +119,6 @@ def process_image(url):
     image = requests.get(url)
     # Make POST request to API
     response = requests.post(HG_img2text, headers=headers, data=image) 
-    # Handle the response from the API
     if response.status_code == 200:
         # Success
         result = response.json()
@@ -90,8 +130,13 @@ def process_image(url):
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 def option_selector(call):
-    global api_name
-    global model
+    user_id = call.from_user.id
+    if user_id not in user_settings:
+        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':{}}
+    settings = user_settings[user_id]
+    api_name = settings['api_name']
+    model = settings['model']
+
     if call.data in _missingpoetoken:
         if str(call.data) == 'Add now':
             bot.send_message(call.message.chat.id,'OK Sign up to Poe and head over to the site ctrl+shift+i\
@@ -103,7 +148,7 @@ def option_selector(call):
                                  Reverting to you.com')
             api_name='you'
     if call.data in providers:        
-        api_name=str(call.data)
+        
         if api_name == 'quora':
             if POE_TOKEN == "":
                 _missing_poe_token(call.message)
@@ -118,21 +163,31 @@ def option_selector(call):
             text = 'Not yet implemented. Changing provider to you'
             bot.send_message( call.message.chat.id,text)
             return
+        api_name = str(call.data)
+        settings['api_name'] = str(call.data)
         bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         model = str(call.data)
+        settings['model'] = str(call.data)
         bot.send_message( call.message.chat.id,model+' is active')
+    with open('settings.json', 'w') as f:
+        json.dump(user_settings, f)
 
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
-def start_handler(update):
-    bot.send_message(update.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
+def start_handler(message):
+    if message.from_user.id not in user_settings:
+        user_settings[message.from_user.id] = {}
+        user_settings[message.from_user.id] = {'api_name':'deepai','model':'ChatGPT','history':[]}
+        with open('settings.json', 'w') as f:
+            json.dump(user_settings, f)
+    bot.send_message(message.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
                      "\nUse command /changeprovider or /changebot to change to a different bot\n\
                         Ask me anything I am here to help you.")
 #help command handler
 @bot.message_handler(commands=['help'])
-def help_handler(update):
-    bot.send_message(update.chat.id, text="  /start : starts the bot\n\
+def help_handler(message):
+    bot.send_message(message.chat.id, text="  /start : starts the bot\n\
     /changeprovider : change provider of the bot\n\
     /changebot : change to available bots in poe.com\n\
     /help : list all commands")
@@ -151,7 +206,6 @@ def changebot_handler(message):
 #changeprovider command handler
 @bot.message_handler(commands=['changeprovider'])
 def changeprovider_handler(message):
-    #making buttons with the model dictionary 
     _providers = telebot.types.InlineKeyboardMarkup()
     for i in providers:
         _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
@@ -159,12 +213,22 @@ def changeprovider_handler(message):
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 def reply_handler(call):
-    # Send "typing" action  
+    user_id = call.from_user.id
+    if user_id in user_settings:
+        settings = user_settings[user_id]
+    else:
+        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[]}
+        settings = user_settings[user_id]
+    api_name = settings['api_name']
+    model = settings['model']
+    history = settings['history']
+    print(history)
     bot.send_chat_action(call.chat.id, "typing")
     sent = bot.send_message(call.chat.id, "Please wait while i think")
     message_id = sent.message_id
     try:
-        text = stream(call,model,api_name)
+        text = stream(call,model,api_name,history)
+
     except RuntimeError as error: 
         if " ".join(str(error).split()[:3]) == "Daily limit reached":
             text = "Daily Limit reached for current bot. please use another bot or another provider"
@@ -174,6 +238,12 @@ def reply_handler(call):
         bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))
         bot.edit_message_text(chat_id=call.chat.id, message_id=message_id, text="Image Generated")      
     else:
+        history.append({"role": "user", "content": call.text})
+        history.append({"role": "assistant", "content":text})
+        history = history[-20:]
+        user_settings[user_id]['history'] = history
+        with open('settings.json', 'w') as f:
+            json.dump(user_settings, f)
         bot.delete_message(chat_id=call.chat.id, message_id=message_id)
         bot.send_message(call.chat.id,text)
 #Messages with image 
