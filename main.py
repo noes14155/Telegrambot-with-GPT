@@ -52,15 +52,21 @@ instruction = "From now on, You are a large language model named AI-Chatbot\
 if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
-'''
+user_settings = {}
 # Open the settings file and load its contents into a dictionary
 with open('settings.json', 'r') as f:
     user_settings = json.load(f)
-'''
-user_settings = {}
+#fucntion to write settings to file
+def update_settings(new_settings):
+    global user_settings
+    user_settings.update(new_settings)
+  
+    with open('settings.json', 'w') as f:
+        json.dump(user_settings, f)
 #function takes user prompt, poe model name, provider name returns chat response
 def stream(call,model,api_name,history): 
         text = ''    
+        global instruction
         if api_name == 'quora': 
           if POE_TOKEN == "":   
                 _missing_poe_token(call)     
@@ -76,24 +82,14 @@ def stream(call,model,api_name,history):
             for chunk in theb.Completion.create(call.text):
                 text += chunk
         elif api_name == 'deepai':
-            messages = [{"role": "system", "content": "You are a helpful assistant."},\
+            messages = [{"role": "system", "content": instruction},\
                         *history,\
                         {"role": "user", "content":call.text}
                         ]
             print(messages)
             for chunk in deepai.ChatCompletion.create(messages):
                 text += chunk 
-            #text = deepai.ChatCompletion.create(messages)
-            '''
-            retries = 0
-            while retries < 3:
-                response = deepai.ChatCompletion.create(messages)
-                if response :
-                    text = response
-                else:
-                    print("Retrying........")
-                    retries += 1
-             '''       
+            
         
         elif api_name == 'Stable Diffusion(generate image)':
             client = Client(HG_text2img)
@@ -130,9 +126,10 @@ def process_image(url):
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 def option_selector(call):
-    user_id = call.from_user.id
+    global user_settings
+    user_id = str(call.from_user.id)
     if user_id not in user_settings:
-        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':{}}
+        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[]}
     settings = user_settings[user_id]
     api_name = settings['api_name']
     model = settings['model']
@@ -176,6 +173,7 @@ def option_selector(call):
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
 def start_handler(message):
+    global user_settings
     if message.from_user.id not in user_settings:
         user_settings[message.from_user.id] = {}
         user_settings[message.from_user.id] = {'api_name':'deepai','model':'ChatGPT','history':[]}
@@ -213,7 +211,8 @@ def changeprovider_handler(message):
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 def reply_handler(call):
-    user_id = call.from_user.id
+    global user_settings
+    user_id = str(call.from_user.id)
     if user_id in user_settings:
         settings = user_settings[user_id]
     else:
@@ -222,7 +221,6 @@ def reply_handler(call):
     api_name = settings['api_name']
     model = settings['model']
     history = settings['history']
-    print(history)
     bot.send_chat_action(call.chat.id, "typing")
     sent = bot.send_message(call.chat.id, "Please wait while i think")
     message_id = sent.message_id
