@@ -4,6 +4,7 @@ from gpt4free import quora
 from gpt4free import you
 from gpt4free import theb
 from gpt4free import deepai
+from gpt4free import italygpt2
 import os
 import requests
 import json
@@ -27,11 +28,9 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['deepai','you','theb','quora','usesless','forefront','Stable Diffusion(generate image)']
+providers = ['deepai','you','theb','quora','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-api_name = 'you'
-model = 'ChatGPT'   
 instruction = "From now on, You are a large language model named AI-Chatbot\
           You are based on the GPT-3.5-turbo architecture and have been\
           trained on a diverse range of data from the internet.\
@@ -60,6 +59,9 @@ with open('settings.json', 'r') as f:
 def stream(call,model,api_name,history): 
         text = ''    
         global instruction
+        messages = [{"role": "system", "content": instruction},\
+                        *history,
+                        ]
         if api_name == 'quora': 
           if POE_TOKEN == "":   
                 _missing_poe_token(call)     
@@ -75,15 +77,9 @@ def stream(call,model,api_name,history):
             for chunk in theb.Completion.create(call.text):
                 text += chunk
         elif api_name == 'deepai':
-            messages = [{"role": "system", "content": instruction},\
-                        *history,\
-                        {"role": "user", "content":call.text}
-                        ]
-            print(messages)
+            messages.append({"role": "user", "content":call.text})
             for chunk in deepai.ChatCompletion.create(messages):
                 text += chunk 
-            
-        
         elif api_name == 'Stable Diffusion(generate image)':
             client = Client(HG_text2img)
             text = client.predict(call.text,api_name="/predict")
@@ -144,13 +140,8 @@ def option_selector(call):
                 _missing_poe_token(call.message)
                 return
         elif api_name == 'forefront':
-            api_name = 'you'
-            text = 'Not yet implemented. Changing provider to you'
-            bot.send_message( call.message.chat.id,text)
-            return
-        elif api_name == 'usesless':
-            api_name = 'you'
-            text = 'Not yet implemented. Changing provider to you'
+            api_name = 'deepai'
+            text = 'Not yet implemented. Changing provider to deepai'
             bot.send_message( call.message.chat.id,text)
             return
         api_name = str(call.data)

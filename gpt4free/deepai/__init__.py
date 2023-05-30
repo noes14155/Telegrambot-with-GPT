@@ -4,7 +4,6 @@ import hashlib
 import random
 import string
 from fake_useragent import UserAgent
-              
 
 class ChatCompletion:
     @classmethod
@@ -30,15 +29,7 @@ class ChatCompletion:
           "chatHistory": (None, json.dumps(messages))
         }
 
-                                                      
         r = requests.post("https://api.deepai.org/chat_response", headers=headers, files=files, stream=True)
-                                           
-                                  
-                           
-                                                         
-                                 
-                             
-                                                   
 
         for chunk in r.iter_content(chunk_size=None):
             r.raise_for_status()
