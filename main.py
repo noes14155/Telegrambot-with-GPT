@@ -56,13 +56,6 @@ user_settings = {}
 # Open the settings file and load its contents into a dictionary
 with open('settings.json', 'r') as f:
     user_settings = json.load(f)
-#fucntion to write settings to file
-def update_settings(new_settings):
-    global user_settings
-    user_settings.update(new_settings)
-  
-    with open('settings.json', 'w') as f:
-        json.dump(user_settings, f)
 #function takes user prompt, poe model name, provider name returns chat response
 def stream(call,model,api_name,history): 
         text = ''    
