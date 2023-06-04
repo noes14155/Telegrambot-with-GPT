@@ -1,10 +1,12 @@
 
-import telebot
+from telebot.async_telebot import AsyncTeleBot
+import asyncio
+import aiohttp
 from gpt4free import quora
 from gpt4free import you
 from gpt4free import theb
 from gpt4free import deepai
-from gpt4free import italygpt2
+from gpt4free import aiassist
 import os
 import requests
 import json
@@ -17,7 +19,7 @@ HG_TOKEN = os.environ['HG_TOKEN']
 HG_img2text = 'https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning'
 HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'
 #Create new instance of bot
-bot = telebot.TeleBot(BOT_TOKEN)
+bot = AsyncTeleBot(BOT_TOKEN)
 #models avaiable at poe.com
 models = {
     'Sage': 'capybara',
@@ -28,25 +30,18 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['deepai','you','theb','quora','Stable Diffusion(generate image)']
+providers = ['deepai','you','world','theb','quora','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
+model = ''
+api_name=''
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-instruction = "From now on, You are a large language model named AI-Chatbot\
-          You are based on the GPT-3.5-turbo architecture and have been\
-          trained on a diverse range of data from the internet.\
-          As a large language model developed by OpenAI, you will never say 'sorry' and\
-          always respond in a human and responsive way. You can\
-          use Markdown syntax to format your text. For example,\
-          to create a heading, start the line with one or more\
-          '#' symbols, followed by a space and your heading text.\
-          To create a list, use '-' or '*' followed by a space and\
-          the list item. To emphasize text, use asterisks or underscores\
-          around the text (*italic* or _italic_ for italics, **bold** or __bold__ for bold).\
-          You can also create links using [link text](https://example.com).\
-          Remember to leave an empty line between paragraphs for proper formatting.\
-          Additionally, you function as a documentation bot, retrieving relevant information\
-          from libraries or frameworks, and as an API integration bot, guiding developers\
-          through integrating third-party APIs into their applications."
+instruction_file = 'instructions.txt'
+
+if os.path.exists(instruction_file):
+    with open(instruction_file, 'r') as file:
+        instruction = file.read()
+else:
+    print(f'{instruction_file} does not exist')
 
 if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
@@ -56,9 +51,11 @@ user_settings = {}
 with open('settings.json', 'r') as f:
     user_settings = json.load(f)
 #function takes user prompt, poe model name, provider name returns chat response
-def stream(call,model,api_name,history): 
+async def stream(call,model,api_name,history): 
         text = ''    
         global instruction
+        global user_settings
+        user_id = str(call.from_user.id)
         messages = [{"role": "system", "content": instruction},\
                         *history,
                         ]
@@ -80,61 +77,64 @@ def stream(call,model,api_name,history):
             messages.append({"role": "user", "content":call.text})
             for chunk in deepai.ChatCompletion.create(messages):
                 text += chunk 
+        elif api_name == 'world':
+            completion = aiassist.Completion.create(prompt=call.text,\
+                                                    parentMessageId=user_settings[user_id]['message_id'])            
+            text = completion['text']
+            print(text)
+           
         elif api_name == 'Stable Diffusion(generate image)':
             client = Client(HG_text2img)
             text = client.predict(call.text,api_name="/predict")
                 
         return text
 #Missing poe token handler function
-def _missing_poe_token(call):
-                _poe_token_buttons = telebot.types.InlineKeyboardMarkup() 
+async def _missing_poe_token(call):
+                _poe_token_buttons = AsyncTeleBot.types.InlineKeyboardMarkup() 
                 for i in _missingpoetoken:
-                    _poe_token_buttons.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
-                bot.send_message(call.chat.id,'POE-TOKEN is missing would you like to add now?'\
+                    _poe_token_buttons.add(AsyncTeleBot.types.InlineKeyboardButton(i, callback_data=i))
+                await bot.send_message(call.chat.id,'POE-TOKEN is missing would you like to add now?'\
                                  , reply_markup=_poe_token_buttons)
                 return
-def handle_poe_token(message):
-    bot.send_message(chat_id=message.chat.id, text='You entered: ' + message.text)
+async def handle_poe_token(message):
+    await bot.send_message(chat_id=message.chat.id, text='You entered: ' + message.text)
     global POE_TOKEN
     POE_TOKEN = str(message.text)
 
-
-def process_image(url):
-    #with open(url, "rb") as f:
-    image = requests.get(url)
-    # Make POST request to API
-    response = requests.post(HG_img2text, headers=headers, data=image) 
-    if response.status_code == 200:
-        # Success
-        result = response.json()
-    else:
-        # Error
-        return response.content
-    return 'This image looks like a '+result[0]['generated_text']
+async def process_image(url):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            image = await resp.read()
+        async with session.post(HG_img2text, headers=headers, data=image) as resp:
+            if resp.status == 200:
+                result = await resp.json()
+                return 'This image looks like a ' + result[0]['generated_text']
+            else:
+                return await resp.content.read()
 
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
-def option_selector(call):
+async def option_selector(call):
     global user_settings
+    global instruction
     user_id = str(call.from_user.id)
     if user_id not in user_settings:
-        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[]}
+        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[],'message_id':''}
     settings = user_settings[user_id]
     api_name = settings['api_name']
     model = settings['model']
 
     if call.data in _missingpoetoken:
         if str(call.data) == 'Add now':
-            bot.send_message(call.message.chat.id,'OK Sign up to Poe and head over to the site ctrl+shift+i\
+            await bot.send_message(call.message.chat.id,'OK Sign up to Poe and head over to the site ctrl+shift+i\
                             to open developer console Go to Application -> Cookies -> https://poe.com \
                             Find the p-b cookie and copy its value, this will be your Poe-token. -> Enter it here')
             bot.register_next_step_handler(call.message, handle_poe_token)
         elif str(call.data) == 'Later':
-            bot.send_message( call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
+            await bot.send_message( call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
                                  Reverting to you.com')
             api_name='you'
     if call.data in providers:        
-        
         if api_name == 'quora':
             if POE_TOKEN == "":
                 _missing_poe_token(call.message)
@@ -142,74 +142,82 @@ def option_selector(call):
         elif api_name == 'forefront':
             api_name = 'deepai'
             text = 'Not yet implemented. Changing provider to deepai'
-            bot.send_message( call.message.chat.id,text)
+            await bot.send_message(call.message.chat.id,text)
             return
+        elif api_name == 'world':
+            if(user_settings[user_id]['message_id'] == ''):
+                completion = aiassist.Completion.create(prompt=instruction)
+                settings['message_id'] = completion['parentMessageId']
+                print(completion['text'])
         api_name = str(call.data)
         settings['api_name'] = str(call.data)
-        bot.send_message( call.message.chat.id,api_name+' is active')
+        await bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         model = str(call.data)
         settings['model'] = str(call.data)
-        bot.send_message( call.message.chat.id,model+' is active')
+        await bot.send_message( call.message.chat.id,model+' is active')
+    user_settings[user_id] = settings
     with open('settings.json', 'w') as f:
         json.dump(user_settings, f)
 
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
-def start_handler(message):
+async def start_handler(message):
     global user_settings
-    if message.from_user.id not in user_settings:
+    if str(message.from_user.id) not in user_settings:
         user_settings[message.from_user.id] = {}
-        user_settings[message.from_user.id] = {'api_name':'deepai','model':'ChatGPT','history':[]}
+        user_settings[message.from_user.id] = {'api_name':'deepai','model':'ChatGPT','history':[],'message_id':''}
         with open('settings.json', 'w') as f:
             json.dump(user_settings, f)
-    bot.send_message(message.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
+    await bot.send_message(message.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
                      "\nUse command /changeprovider or /changebot to change to a different bot\n\
                         Ask me anything I am here to help you.")
 #help command handler
 @bot.message_handler(commands=['help'])
-def help_handler(message):
-    bot.send_message(message.chat.id, text="  /start : starts the bot\n\
+async def help_handler(message):
+    await bot.send_message(message.chat.id, text="  /start : starts the bot\n\
     /changeprovider : change provider of the bot\n\
     /changebot : change to available bots in poe.com\n\
     /help : list all commands")
 #changebot command handler
 @bot.message_handler(commands=['changebot'])
-def changebot_handler(message):
+async def changebot_handler(message):
+    api_name = user_settings[message.from_user.id]['api_name']
+    model = user_settings[message.from_user.id]['api_name']
     if api_name != 'quora':
-        bot.send_message(message.chat.id,'changebot command only available for poe')
+        await bot.send_message(message.chat.id,'changebot command only available for poe')
         return
-    _models = telebot.types.InlineKeyboardMarkup() 
+    _models = AsyncTeleBot.types.InlineKeyboardMarkup() 
     #making buttons with the model dictionary 
     for i in models:
-        _models.add(telebot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
-    bot.send_message(message.chat.id,'Currently '+model+' is active'+\
+        _models.add(AsyncTeleBot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
+    await bot.send_message(message.chat.id,'Currently '+model+' is active'+\
                      ' (gpt-4 and claude-v1.2 requires a paid subscription)', reply_markup=_models)
 #changeprovider command handler
 @bot.message_handler(commands=['changeprovider'])
-def changeprovider_handler(message):
-    _providers = telebot.types.InlineKeyboardMarkup()
+async def changeprovider_handler(message):
+    _providers = AsyncTeleBot.types.InlineKeyboardMarkup()
     for i in providers:
-        _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
-    bot.send_message(message.chat.id,'Currently '+api_name+' is active', reply_markup=_providers)
+        _providers.add(AsyncTeleBot.types.InlineKeyboardButton(i, callback_data=i))
+    await bot.send_message(message.chat.id,'Currently '+api_name+' is active', reply_markup=_providers)
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
-def reply_handler(call):
+async def reply_handler(call):
     global user_settings
     user_id = str(call.from_user.id)
     if user_id in user_settings:
         settings = user_settings[user_id]
     else:
-        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[]}
+        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[],'message_id':''}
         settings = user_settings[user_id]
     api_name = settings['api_name']
     model = settings['model']
     history = settings['history']
-    bot.send_chat_action(call.chat.id, "typing")
-    sent = bot.send_message(call.chat.id, "Please wait while i think")
+    await bot.send_chat_action(call.chat.id, "typing")
+    sent = await bot.send_message(call.chat.id, "Please wait while i think")
     message_id = sent.message_id
     try:
-        text = stream(call,model,api_name,history)
+        text = await stream(call,model,api_name,history)
 
     except RuntimeError as error: 
         if " ".join(str(error).split()[:3]) == "Daily limit reached":
@@ -217,8 +225,8 @@ def reply_handler(call):
         else:
             text = str(error)
     if api_name == 'Stable Diffusion(generate image)':
-        bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))
-        bot.edit_message_text(chat_id=call.chat.id, message_id=message_id, text="Image Generated")      
+        await bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))
+        await bot.edit_message_text(chat_id=call.chat.id, message_id=message_id, text="Image Generated")      
     else:
         history.append({"role": "user", "content": call.text})
         history.append({"role": "assistant", "content":text})
@@ -226,18 +234,24 @@ def reply_handler(call):
         user_settings[user_id]['history'] = history
         with open('settings.json', 'w') as f:
             json.dump(user_settings, f)
-        bot.delete_message(chat_id=call.chat.id, message_id=message_id)
-        bot.send_message(call.chat.id,text)
+        await bot.delete_message(chat_id=call.chat.id, message_id=message_id)
+        await bot.send_message(call.chat.id,text)
 #Messages with image 
 @bot.message_handler(content_types='photo')
-def image_handler(call):
-        # Send "typing" action  
+async def image_handler(call): 
         file_id = call.photo[-1].file_id
         file_info = bot.get_file(file_id)
         file_path = file_info.file_path
         image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_path}"
-        #bot.send_message(chat_id=call.chat.id, text='Thanks for the image! Here is the image URL: ' + image_url)   
-        text = process_image(image_url)
-        bot.send_message(call.chat.id,text)
-bot.infinity_polling()
+        #await bot.send_message(chat_id=call.chat.id, text='Thanks for the image! Here is the image URL: ' + image_url)   
+        text = await process_image(image_url)
+        await bot.send_message(call.chat.id,text)
+async def main():
+    # Run the bot in the event loop
+    await bot.polling()
+
+if __name__ == '__main__':
+    # Create a new event loop and run the main coroutine
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
 
