@@ -2,6 +2,7 @@
 from telebot.async_telebot import AsyncTeleBot
 import asyncio
 import aiohttp
+import aiofiles
 from gpt4free import quora
 from gpt4free import you
 from gpt4free import theb
@@ -101,6 +102,10 @@ async def handle_poe_token(message):
     global POE_TOKEN
     POE_TOKEN = str(message.text)
 
+async def save_user_settings(user_settings):
+    async with aiofiles.open('settings.json', 'w') as f:
+        await f.write(json.dumps(user_settings))
+
 async def process_image(url):
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
@@ -157,8 +162,7 @@ async def option_selector(call):
         settings['model'] = str(call.data)
         await bot.send_message( call.message.chat.id,model+' is active')
     user_settings[user_id] = settings
-    with open('settings.json', 'w') as f:
-        json.dump(user_settings, f)
+    await save_user_settings(user_settings)
 
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
@@ -167,8 +171,7 @@ async def start_handler(message):
     if str(message.from_user.id) not in user_settings:
         user_settings[message.from_user.id] = {}
         user_settings[message.from_user.id] = {'api_name':'deepai','model':'ChatGPT','history':[],'message_id':''}
-        with open('settings.json', 'w') as f:
-            json.dump(user_settings, f)
+        await save_user_settings(user_settings)
     await bot.send_message(message.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
                      "\nUse command /changeprovider or /changebot to change to a different bot\n\
                         Ask me anything I am here to help you.")
@@ -232,8 +235,7 @@ async def reply_handler(call):
         history.append({"role": "assistant", "content":text})
         history = history[-20:]
         user_settings[user_id]['history'] = history
-        with open('settings.json', 'w') as f:
-            json.dump(user_settings, f)
+        await save_user_settings(user_settings)
         await bot.delete_message(chat_id=call.chat.id, message_id=message_id)
         await bot.send_message(call.chat.id,text)
 #Messages with image 
