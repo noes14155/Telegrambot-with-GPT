@@ -3,13 +3,13 @@ from telebot.async_telebot import AsyncTeleBot
 import asyncio
 import aiohttp
 import aiofiles
+import sqlite3
 from gpt4free import quora
 from gpt4free import you
 from gpt4free import theb
 from gpt4free import deepai
 from gpt4free import aiassist
 import os
-import requests
 import json
 from gradio_client import Client
 
@@ -47,16 +47,24 @@ else:
 if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
-user_settings = {}
-# Open the settings file and load its contents into a dictionary
-with open('settings.json', 'r') as f:
-    user_settings = json.load(f)
+# Connect to the SQLite database
+conn = sqlite3.connect('chatbot.db')
+c = conn.cursor()
+
+# Create the settings table if it doesn't exist yet
+c.execute('''CREATE TABLE IF NOT EXISTS settings 
+             (user_id INTEGER PRIMARY KEY, api_name TEXT, model TEXT, message_id TEXT)''')
+
+# Create the history table if it doesn't exist yet
+c.execute('''CREATE TABLE IF NOT EXISTS history 
+             (user_id INTEGER PRIMARY KEY, role TEXT, content TEXT)''')
 #function takes user prompt, poe model name, provider name returns chat response
 async def stream(call,model,api_name,history): 
         text = ''    
         global instruction
-        global user_settings
-        user_id = str(call.from_user.id)
+        c.execute('''SELECT * FROM settings WHERE user_id=?''', (call.from_user.id,))
+        row = c.fetchone()
+        user_id, api_name, model, message_id = row
         messages = [{"role": "system", "content": instruction},\
                         *history,
                         ]
@@ -80,7 +88,7 @@ async def stream(call,model,api_name,history):
                 text += chunk 
         elif api_name == 'world':
             completion = aiassist.Completion.create(prompt=call.text,\
-                                                    parentMessageId=user_settings[user_id]['message_id'])            
+                                                    parentMessageId=message_id)            
             text = completion['text']
             print(text)
            
@@ -102,9 +110,6 @@ async def handle_poe_token(message):
     global POE_TOKEN
     POE_TOKEN = str(message.text)
 
-async def save_user_settings(user_settings):
-    async with aiofiles.open('settings.json', 'w') as f:
-        await f.write(json.dumps(user_settings))
 
 async def process_image(url):
     async with aiohttp.ClientSession() as session:
@@ -120,15 +125,12 @@ async def process_image(url):
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 async def option_selector(call):
-    global user_settings
-    global instruction
-    user_id = str(call.from_user.id)
-    if user_id not in user_settings:
-        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[],'message_id':''}
-    settings = user_settings[user_id]
-    api_name = settings['api_name']
-    model = settings['model']
-
+    c.execute('''SELECT * FROM settings WHERE user_id=?''', (call.from_user.id,))
+    row = c.fetchone()
+    if row:
+        user_id, api_name, model, message_id = row
+    else:
+        user_id, api_name, model, message_id = call.from_user.id, 'deepai', 'ChatGPT', ''
     if call.data in _missingpoetoken:
         if str(call.data) == 'Add now':
             await bot.send_message(call.message.chat.id,'OK Sign up to Poe and head over to the site ctrl+shift+i\
@@ -136,7 +138,7 @@ async def option_selector(call):
                             Find the p-b cookie and copy its value, this will be your Poe-token. -> Enter it here')
             bot.register_next_step_handler(call.message, handle_poe_token)
         elif str(call.data) == 'Later':
-            await bot.send_message( call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
+            await bot.send_message(call.message.chat.id,'No POE-TOKEN found! Add it in your env file.\
                                  Reverting to you.com')
             api_name='you'
     if call.data in providers:        
@@ -150,28 +152,25 @@ async def option_selector(call):
             await bot.send_message(call.message.chat.id,text)
             return
         elif api_name == 'world':
-            if(user_settings[user_id]['message_id'] == ''):
+            if message_id == '':
                 completion = aiassist.Completion.create(prompt=instruction)
-                settings['message_id'] = completion['parentMessageId']
-                print(completion['text'])
+                message_id = completion['parentMessageId']
+                c.execute('''UPDATE settings SET message_id=? WHERE user_id=?''', (message_id, user_id))
         api_name = str(call.data)
-        settings['api_name'] = str(call.data)
+        c.execute('''UPDATE settings SET api_name=? WHERE telegram_id=?''', (api_name, user_id))
         await bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         model = str(call.data)
-        settings['model'] = str(call.data)
         await bot.send_message( call.message.chat.id,model+' is active')
-    user_settings[user_id] = settings
-    await save_user_settings(user_settings)
-
+        c.execute('''UPDATE settings SET model=? WHERE telegram_id=?''', (model, user_id))
+    conn.commit()
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
 async def start_handler(message):
-    global user_settings
-    if str(message.from_user.id) not in user_settings:
-        user_settings[message.from_user.id] = {}
-        user_settings[message.from_user.id] = {'api_name':'deepai','model':'ChatGPT','history':[],'message_id':''}
-        await save_user_settings(user_settings)
+    # Insert the user into the settings table if they don't exist yet
+    c.execute('''INSERT OR IGNORE INTO settings (user_id, api_name, model,message_id)
+                 VALUES (?, ?, ?, ?)''', (message.chat.id, 'deepai', 'ChatGPT',''))
+    conn.commit()
     await bot.send_message(message.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
                      "\nUse command /changeprovider or /changebot to change to a different bot\n\
                         Ask me anything I am here to help you.")
@@ -185,8 +184,9 @@ async def help_handler(message):
 #changebot command handler
 @bot.message_handler(commands=['changebot'])
 async def changebot_handler(message):
-    api_name = user_settings[message.from_user.id]['api_name']
-    model = user_settings[message.from_user.id]['api_name']
+    c.execute('''SELECT * FROM settings WHERE user_id=?''', (message.from_user.id,))
+    row = c.fetchone()
+    user_id, api_name, model, message_id = row
     if api_name != 'quora':
         await bot.send_message(message.chat.id,'changebot command only available for poe')
         return
@@ -206,22 +206,23 @@ async def changeprovider_handler(message):
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 async def reply_handler(call):
-    global user_settings
-    user_id = str(call.from_user.id)
-    if user_id in user_settings:
-        settings = user_settings[user_id]
+    c.execute('''SELECT api_name, model FROM settings WHERE user_id=?''', (call.chat.id,))
+    row = c.fetchone()
+    if row:
+        api_name, model = row
     else:
-        user_settings[user_id] = {'api_name':'deepai','model':'ChatGPT','history':[],'message_id':''}
-        settings = user_settings[user_id]
-    api_name = settings['api_name']
-    model = settings['model']
-    history = settings['history']
+        api_name, model = 'deepai', 'ChatGPT'
+    c.execute('''SELECT role, content FROM history WHERE user_id=?''', (call.chat.id,))
+    rows = c.fetchall()
+    messages = []
+    for row in rows:
+        role, content = row
+        messages.append({"role": role, "content": content})
     await bot.send_chat_action(call.chat.id, "typing")
     sent = await bot.send_message(call.chat.id, "Please wait while i think")
     message_id = sent.message_id
     try:
-        text = await stream(call,model,api_name,history)
-
+        text = await stream(call,model,api_name,history='')
     except RuntimeError as error: 
         if " ".join(str(error).split()[:3]) == "Daily limit reached":
             text = "Daily Limit reached for current bot. please use another bot or another provider"
@@ -231,11 +232,11 @@ async def reply_handler(call):
         await bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))
         await bot.edit_message_text(chat_id=call.chat.id, message_id=message_id, text="Image Generated")      
     else:
-        history.append({"role": "user", "content": call.text})
-        history.append({"role": "assistant", "content":text})
-        history = history[-20:]
-        user_settings[user_id]['history'] = history
-        await save_user_settings(user_settings)
+        c.execute('''INSERT INTO history (user_id, role, content)
+                 VALUES (?, ?, ?)''', (call.chat.id, 'user', call.text))
+        c.execute('''INSERT INTO history (user_id, role, content)
+                 VALUES (?, ?, ?)''', (call.chat.id, 'assistant', text))
+        conn.commit()
         await bot.delete_message(chat_id=call.chat.id, message_id=message_id)
         await bot.send_message(call.chat.id,text)
 #Messages with image 
