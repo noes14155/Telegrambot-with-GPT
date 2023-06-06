@@ -2,15 +2,14 @@
 from telebot.async_telebot import AsyncTeleBot
 import asyncio
 import aiohttp
-import aiofiles
 import sqlite3
 from gpt4free import quora
 from gpt4free import you
 from gpt4free import theb
 from gpt4free import deepai
 from gpt4free import aiassist
+import botfn
 import os
-import json
 from gradio_client import Client
 
 BOT_TOKEN = os.environ['BOT_TOKEN']
@@ -37,6 +36,7 @@ model = ''
 api_name=''
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 instruction_file = 'instructions.txt'
+bn = botfn.botfn()
 
 if os.path.exists(instruction_file):
     with open(instruction_file, 'r') as file:
@@ -57,14 +57,17 @@ c.execute('''CREATE TABLE IF NOT EXISTS settings
 
 # Create the history table if it doesn't exist yet
 c.execute('''CREATE TABLE IF NOT EXISTS history 
-             (user_id INTEGER PRIMARY KEY, role TEXT, content TEXT)''')
-#function takes user prompt, poe model name, provider name returns chat response
+             (user_id INTEGER, role TEXT, content TEXT)''')
+    #function takes user prompt, poe model name, provider name returns chat response
 async def stream(call,model,api_name,history): 
         text = ''    
         global instruction
         c.execute('''SELECT * FROM settings WHERE user_id=?''', (call.from_user.id,))
         row = c.fetchone()
-        user_id, api_name, model, message_id = row
+        if row:
+            user_id, api_name, model, message_id = row
+        else:
+            user_id, api_name, model, message_id = call.from_user.id,'deepai','ChatGPT',''
         messages = [{"role": "system", "content": instruction},\
                         *history,
                         ]
@@ -97,6 +100,7 @@ async def stream(call,model,api_name,history):
             text = client.predict(call.text,api_name="/predict")
                 
         return text
+
 #Missing poe token handler function
 async def _missing_poe_token(call):
                 _poe_token_buttons = AsyncTeleBot.types.InlineKeyboardMarkup() 
@@ -110,6 +114,24 @@ async def handle_poe_token(message):
     global POE_TOKEN
     POE_TOKEN = str(message.text)
 
+
+async def download_audio_file_from_message(message):
+    if message.audio is not None:
+        audio_file = message.audio
+    elif message.voice is not None:
+        audio_file = message.voice
+    else:
+        return None
+    file_path = f'{audio_file.file_id}.ogg'
+    file_dir = 'audio_files'
+    os.makedirs(file_dir, exist_ok=True)
+    full_file_path = os.path.join(file_dir, file_path)
+    file_info = await bot.get_file(message.voice.file_id)
+    #await file_info.download(full_file_path)
+    downloaded_file = await bot.download_file(file_info.file_path)
+    with open(full_file_path, 'wb') as new_file:
+        new_file.write(downloaded_file)
+    return full_file_path
 
 async def process_image(url):
     async with aiohttp.ClientSession() as session:
@@ -206,13 +228,13 @@ async def changeprovider_handler(message):
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 async def reply_handler(call):
-    c.execute('''SELECT api_name, model FROM settings WHERE user_id=?''', (call.chat.id,))
+    c.execute('''SELECT api_name, model FROM settings WHERE user_id=?''', (call.from_user.id,))
     row = c.fetchone()
     if row:
         api_name, model = row
     else:
         api_name, model = 'deepai', 'ChatGPT'
-    c.execute('''SELECT role, content FROM history WHERE user_id=?''', (call.chat.id,))
+    c.execute('''SELECT role, content FROM history WHERE user_id=?''', (call.from_user.id,))
     rows = c.fetchall()
     messages = []
     for row in rows:
@@ -239,6 +261,20 @@ async def reply_handler(call):
         conn.commit()
         await bot.delete_message(chat_id=call.chat.id, message_id=message_id)
         await bot.send_message(call.chat.id,text)
+#messages with audio
+@bot.message_handler(content_types=['voice', 'audio'])
+async def audio_handler(call):
+    c.execute('''SELECT api_name, model FROM settings WHERE user_id=?''', (call.from_user.id,))
+    row = c.fetchone()
+    if row:
+        api_name, model = row
+    else:
+        api_name, model = 'deepai', 'ChatGPT'
+    audio_file_path = await download_audio_file_from_message(call)
+    print(audio_file_path)
+    transcribed_audio = await bn.transcribe_audio(audio_file_path)
+    sent = await bot.send_message(call.chat.id,'Transcribed audio:' + transcribed_audio)
+    await reply_handler(sent)
 #Messages with image 
 @bot.message_handler(content_types='photo')
 async def image_handler(call): 
