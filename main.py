@@ -69,7 +69,7 @@ async def stream(call,model,api_name,history):
             user_id, api_name, model, message_id = row
         else:
             user_id, api_name, model, message_id = call.from_user.id,'deepai','ChatGPT',''
-        messages = [{"role": "system", "content": instruction},\
+        messages = [{"role": "user", "content": instruction},\
                         *history,
                         ]
         if api_name == 'quora': 
@@ -93,12 +93,11 @@ async def stream(call,model,api_name,history):
         elif api_name == 'AI Assist':
             completion = aiassist.Completion.create(prompt=instruction+'\n'+call.text)            
             text = completion['text']
-            print(text)
            
         elif api_name == 'Stable Diffusion(generate image)':
             client = Client(HG_text2img)
             text = client.predict(call.text,api_name="/predict")
-                
+        print(text)
         return text
 
 #Missing poe token handler function
@@ -244,7 +243,7 @@ async def reply_handler(call):
     sent = await bot.send_message(call.chat.id, "Please wait while i think")
     message_id = sent.message_id
     try:
-        text = await stream(call,model,api_name,history='')
+        text = await stream(call,model,api_name,history=messages)
     except RuntimeError as error: 
         if " ".join(str(error).split()[:3]) == "Daily limit reached":
             text = "Daily Limit reached for current bot. please use another bot or another provider"
