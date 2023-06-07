@@ -60,7 +60,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS settings
 c.execute('''CREATE TABLE IF NOT EXISTS history 
              (user_id INTEGER, role TEXT, content TEXT)''')
     #function takes user prompt, poe model name, provider name returns chat response
-async def stream(call,model,api_name,history): 
+async def stream(call,model,api_name): 
         text = ''    
         global instruction
         c.execute('''SELECT * FROM settings WHERE user_id=?''', (call.from_user.id,))
@@ -69,9 +69,9 @@ async def stream(call,model,api_name,history):
             user_id, api_name, model, message_id = row
         else:
             user_id, api_name, model, message_id = call.from_user.id,'deepai','ChatGPT',''
-        messages = [{"role": "user", "content": instruction},\
-                        *history,
-                        ]
+        c.execute('''SELECT role, content FROM history WHERE user_id=?''', (call.from_user.id,))
+        rows = c.fetchall()
+    
         if api_name == 'quora': 
           if POE_TOKEN == "":   
                 _missing_poe_token(call)     
@@ -87,11 +87,23 @@ async def stream(call,model,api_name,history):
             for chunk in theb.Completion.create(call.text):
                 text += chunk
         elif api_name == 'deepai':
+            history = []
+            for row in rows:
+                role, content = row
+            messages.append({"role": role, "content": content})
+            messages = [{"role": "user", "content": instruction},\
+                        *history,
+                        ]
             messages.append({"role": "user", "content":call.text})
             for chunk in deepai.ChatCompletion.create(messages):
                 text += chunk 
         elif api_name == 'AI Assist':
-            completion = aiassist.Completion.create(prompt=instruction+'\n'+call.text)            
+            history=''
+            for role,content in rows[10:]:
+                
+                print(content)
+                history = history + '\n' + content
+            completion = aiassist.Completion.create(prompt=instruction+history+'\n'+call.text)     
             text = completion['text']
            
         elif api_name == 'Stable Diffusion(generate image)':
@@ -233,17 +245,12 @@ async def reply_handler(call):
         api_name, model = row
     else:
         api_name, model = 'deepai', 'ChatGPT'
-    c.execute('''SELECT role, content FROM history WHERE user_id=?''', (call.from_user.id,))
-    rows = c.fetchall()
-    messages = []
-    for row in rows:
-        role, content = row
-        messages.append({"role": role, "content": content})
+    
     await bot.send_chat_action(call.chat.id, "typing")
     sent = await bot.send_message(call.chat.id, "Please wait while i think")
     message_id = sent.message_id
     try:
-        text = await stream(call,model,api_name,history=messages)
+        text = await stream(call,model,api_name)
     except RuntimeError as error: 
         if " ".join(str(error).split()[:3]) == "Daily limit reached":
             text = "Daily Limit reached for current bot. please use another bot or another provider"
@@ -278,7 +285,7 @@ async def audio_handler(call):
 @bot.message_handler(content_types='photo')
 async def image_handler(call): 
         file_id = call.photo[-1].file_id
-        file_info = bot.get_file(file_id)
+        file_info = await bot.get_file(file_id)
         file_path = file_info.file_path
         image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_path}"
         #await bot.send_message(chat_id=call.chat.id, text='Thanks for the image! Here is the image URL: ' + image_url)   
