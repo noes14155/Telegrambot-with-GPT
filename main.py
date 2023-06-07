@@ -1,5 +1,6 @@
 
 from telebot.async_telebot import AsyncTeleBot
+import telebot
 import asyncio
 import aiohttp
 import sqlite3
@@ -30,7 +31,7 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['deepai','you','world','theb','quora','Stable Diffusion(generate image)']
+providers = ['deepai','you','AI Assist','theb','quora','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
 model = ''
 api_name=''
@@ -89,9 +90,8 @@ async def stream(call,model,api_name,history):
             messages.append({"role": "user", "content":call.text})
             for chunk in deepai.ChatCompletion.create(messages):
                 text += chunk 
-        elif api_name == 'world':
-            completion = aiassist.Completion.create(prompt=call.text,\
-                                                    parentMessageId=message_id)            
+        elif api_name == 'AI Assist':
+            completion = aiassist.Completion.create(prompt=instruction+'\n'+call.text)            
             text = completion['text']
             print(text)
            
@@ -173,18 +173,18 @@ async def option_selector(call):
             text = 'Not yet implemented. Changing provider to deepai'
             await bot.send_message(call.message.chat.id,text)
             return
-        elif api_name == 'world':
+        elif api_name == 'AI Assist':
             if message_id == '':
                 completion = aiassist.Completion.create(prompt=instruction)
                 message_id = completion['parentMessageId']
                 c.execute('''UPDATE settings SET message_id=? WHERE user_id=?''', (message_id, user_id))
         api_name = str(call.data)
-        c.execute('''UPDATE settings SET api_name=? WHERE telegram_id=?''', (api_name, user_id))
+        c.execute('''UPDATE settings SET api_name=? WHERE user_id=?''', (api_name, user_id))
         await bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         model = str(call.data)
         await bot.send_message( call.message.chat.id,model+' is active')
-        c.execute('''UPDATE settings SET model=? WHERE telegram_id=?''', (model, user_id))
+        c.execute('''UPDATE settings SET model=? WHERE user_id=?''', (model, user_id))
     conn.commit()
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
@@ -212,18 +212,18 @@ async def changebot_handler(message):
     if api_name != 'quora':
         await bot.send_message(message.chat.id,'changebot command only available for poe')
         return
-    _models = AsyncTeleBot.types.InlineKeyboardMarkup() 
+    _models = telebot.types.InlineKeyboardMarkup() 
     #making buttons with the model dictionary 
     for i in models:
-        _models.add(AsyncTeleBot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
+        _models.add(telebot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
     await bot.send_message(message.chat.id,'Currently '+model+' is active'+\
                      ' (gpt-4 and claude-v1.2 requires a paid subscription)', reply_markup=_models)
 #changeprovider command handler
 @bot.message_handler(commands=['changeprovider'])
 async def changeprovider_handler(message):
-    _providers = AsyncTeleBot.types.InlineKeyboardMarkup()
+    _providers = telebot.types.InlineKeyboardMarkup()
     for i in providers:
-        _providers.add(AsyncTeleBot.types.InlineKeyboardButton(i, callback_data=i))
+        _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
     await bot.send_message(message.chat.id,'Currently '+api_name+' is active', reply_markup=_providers)
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
