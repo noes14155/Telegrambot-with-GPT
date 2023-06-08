@@ -3,7 +3,7 @@ from telebot.async_telebot import AsyncTeleBot
 import telebot
 import asyncio
 import aiohttp
-import sqlite3
+import random
 from gpt4free import quora
 from gpt4free import you
 from gpt4free import theb
@@ -34,10 +34,14 @@ models = {
 }
 providers = ['deepai','you','AI Assist','theb','quora','Stable Diffusion(generate image)']
 _missingpoetoken = ['Add now','Later']
-model = ''
-api_name=''
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 instruction_file = 'instructions.txt'
+messages = [
+    "Please wait...","Hang on a sec...","Just a moment...","Processing your request...",
+    "Almost done...","Working on it...","One moment please...","Patience is a virtue...",
+    "Hold tight...","Be right back...","We're on it...","Doing our thing...","Sit tight...",
+    "Almost there...","Just a little longer...","Processing...","Stay put...",
+]
 bn = botfn.botfn()
 db = botdb.Database('chatbot.db')
 db.create_tables()
@@ -51,7 +55,11 @@ if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
 
-    #function takes user prompt, poe model name, provider name returns chat response
+async def get_aiassist_response(prompt):
+    completion = aiassist.Completion.create(prompt=prompt)
+    response = completion['text']
+    return response
+#function takes user prompt, poe model name, provider name returns chat response
 async def stream(call,model,api_name): 
         text = ''    
         global instruction
@@ -61,7 +69,7 @@ async def stream(call,model,api_name):
             db.insert_settings(call.from_user.id, api_name, model)
         else:
             api_name, model = result
-        rows = db.get_history(call.from_user.id)
+        rows = db.get_history(call.from_user.id)[-10:]
     
         if api_name == 'quora': 
           if POE_TOKEN == "":   
@@ -90,12 +98,9 @@ async def stream(call,model,api_name):
                 text += chunk 
         elif api_name == 'AI Assist':
             history=''
-            for role,content in rows[10:]:
-                
-                print(content)
-                history = history + '\n' + content
-            completion = aiassist.Completion.create(prompt=instruction+history+'\n'+call.text)     
-            text = completion['text']
+            prompt=instruction+'\n'+history+'\n'+call.text
+            history = '\n'.join(row[1] for row in rows)
+            text = await get_aiassist_response(prompt=prompt)
            
         elif api_name == 'Stable Diffusion(generate image)':
             client = Client(HG_text2img)
@@ -145,7 +150,13 @@ async def process_image(url):
                 return 'This image looks like a ' + result[0]['generated_text']
             else:
                 return await resp.content.read()
-
+async def send_with_waiting_message(chat_id):
+    waiting_message = random.choice(messages)
+    sent = await bot.send_message(chat_id, waiting_message)
+    message_id = sent.message_id
+    chat_action_task = asyncio.create_task(bot.send_chat_action(chat_id, "typing"))
+    await asyncio.sleep(3) 
+    await bot.delete_message(chat_id=chat_id, message_id=message_id)
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 async def option_selector(call):
@@ -185,7 +196,8 @@ async def option_selector(call):
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
 async def start_handler(message):
-    db.insert_settings(message.chat.id, 'AI Assist', 'ChatGPT','')
+    api_name = 'AI Assist'
+    db.insert_settings(message.chat.id, 'AI Assist', 'ChatGPT')
     await bot.send_message(message.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
                      "\nUse command /changeprovider or /changebot to change to a different bot\n\
                         Ask me anything I am here to help you.")
@@ -212,15 +224,14 @@ async def changebot_handler(message):
     #making buttons with the model dictionary 
     for i in models:
         _models.add(telebot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
-    await bot.send_message(message.chat.id,'Currently '+model+' is active'+\
-                     ' (gpt-4 and claude-v1.2 requires a paid subscription)', reply_markup=_models)
+    await bot.send_message(message.chat.id,'Select model to use', reply_markup=_models)
 #changeprovider command handler
 @bot.message_handler(commands=['changeprovider'])
 async def changeprovider_handler(message):
     _providers = telebot.types.InlineKeyboardMarkup()
     for i in providers:
         _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
-    await bot.send_message(message.chat.id,'Currently '+api_name+' is active', reply_markup=_providers)
+    await bot.send_message(message.chat.id,'Select which provider to use', reply_markup=_providers)
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 async def reply_handler(call):
@@ -230,49 +241,44 @@ async def reply_handler(call):
         db.insert_settings(call.from_user.id, api_name, model)
     else:
         api_name, model = result
-    
-    await bot.send_chat_action(call.chat.id, "typing")
-    sent = await bot.send_message(call.chat.id, "Please wait while i think")
-    message_id = sent.message_id
+    chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     try:
-        text = await stream(call,model,api_name)
+        text_task = asyncio.create_task(stream(call,model,api_name))
+        text = await text_task
     except RuntimeError as error: 
         if " ".join(str(error).split()[:3]) == "Daily limit reached":
             text = "Daily Limit reached for current bot. please use another bot or another provider"
         else:
             text = str(error)
     if api_name == 'Stable Diffusion(generate image)':
-        await bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))
-        await bot.edit_message_text(chat_id=call.chat.id, message_id=message_id, text="Image Generated")      
+        await bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))      
     else:
         db.insert_history(call.chat.id, 'user', call.text)
         db.insert_history(call.chat.id, 'assistant', text)
-        await bot.delete_message(chat_id=call.chat.id, message_id=message_id)
-        await bot.send_message(call.chat.id,text)
-#messages with audio
-@bot.message_handler(content_types=['voice', 'audio'])
-async def audio_handler(call):
-    result = db.get_settings(call.from_user.id)
-    if result is None:
-        api_name, model = 'AI Assist','ChatGPT'
-        db.insert_settings(call.from_user.id, api_name, model)
-    else:
-        api_name, model = result
-    audio_file_path = await download_audio_file_from_message(call)
-    print(audio_file_path)
-    transcribed_audio = await bn.transcribe_audio(audio_file_path)
-    sent = await bot.send_message(call.chat.id,'Transcribed audio:' + transcribed_audio)
-    await reply_handler(sent)
-#Messages with image 
-@bot.message_handler(content_types='photo')
-async def image_handler(call): 
-        file_id = call.photo[-1].file_id
-        file_info = await bot.get_file(file_id)
-        file_path = file_info.file_path
-        image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_path}"
-        #await bot.send_message(chat_id=call.chat.id, text='Thanks for the image! Here is the image URL: ' + image_url)   
+        message_task = asyncio.create_task(bot.send_message(call.chat.id,text))
+        message = await message_task
+#messages with audio or photo
+@bot.message_handler(content_types=['voice', 'audio', 'photo'])
+async def imageaudio_handler(call): 
+    chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
+    if call.content_type == 'photo':
+        file_info = await bot.get_file(call.photo[-1].file_id)
+        image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_info.file_path}"
         text = await process_image(image_url)
         await bot.send_message(call.chat.id,text)
+        prompt = instruction + '\n[System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.]' + text
+    elif call.content_type == 'audio' or 'voice':
+        audio_file_path = await download_audio_file_from_message(call)
+        text = await bn.transcribe_audio(audio_file_path)
+        sent = await bot.send_message(call.chat.id,'Transcribed audio:' + text)
+        prompt = instruction+'\n[System: This is a transcription of the user\'s command provided by an voice to text model. May contain transcription errors reply accordingly]'+text
+    else:
+        return
+    response = await get_aiassist_response(prompt)
+    await bot.send_message(call.chat.id,response)
+    db.insert_history(call.chat.id, 'user', text)
+    db.insert_history(call.chat.id, 'assistant', response)
+
 async def main():
     # Run the bot in the event loop
     await bot.polling()
