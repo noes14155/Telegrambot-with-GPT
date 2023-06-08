@@ -10,6 +10,7 @@ from gpt4free import theb
 from gpt4free import deepai
 from gpt4free import aiassist
 import botfn
+import botdb
 import os
 from gradio_client import Client
 
@@ -17,7 +18,7 @@ BOT_TOKEN = os.environ['BOT_TOKEN']
 POE_TOKEN = os.environ['POE_TOKEN']
 HG_TOKEN = os.environ['HG_TOKEN']
 #HG_API = os.environ[HG_API]
-HG_img2text = 'https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning'
+HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
 HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'
 #Create new instance of bot
 bot = AsyncTeleBot(BOT_TOKEN)
@@ -38,7 +39,8 @@ api_name=''
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 instruction_file = 'instructions.txt'
 bn = botfn.botfn()
-
+db = botdb.Database('chatbot.db')
+db.create_tables()
 if os.path.exists(instruction_file):
     with open(instruction_file, 'r') as file:
         instruction = file.read()
@@ -48,29 +50,18 @@ else:
 if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
-# Connect to the SQLite database
-conn = sqlite3.connect('chatbot.db')
-c = conn.cursor()
 
-# Create the settings table if it doesn't exist yet
-c.execute('''CREATE TABLE IF NOT EXISTS settings 
-             (user_id INTEGER PRIMARY KEY, api_name TEXT, model TEXT, message_id TEXT)''')
-
-# Create the history table if it doesn't exist yet
-c.execute('''CREATE TABLE IF NOT EXISTS history 
-             (user_id INTEGER, role TEXT, content TEXT)''')
     #function takes user prompt, poe model name, provider name returns chat response
 async def stream(call,model,api_name): 
         text = ''    
         global instruction
-        c.execute('''SELECT * FROM settings WHERE user_id=?''', (call.from_user.id,))
-        row = c.fetchone()
-        if row:
-            user_id, api_name, model, message_id = row
+        result = db.get_settings(call.from_user.id)
+        if result is None:
+            api_name, model = 'AI Assist','ChatGPT'
+            db.insert_settings(call.from_user.id, api_name, model)
         else:
-            user_id, api_name, model, message_id = call.from_user.id,'deepai','ChatGPT',''
-        c.execute('''SELECT role, content FROM history WHERE user_id=?''', (call.from_user.id,))
-        rows = c.fetchall()
+            api_name, model = result
+        rows = db.get_history(call.from_user.id)
     
         if api_name == 'quora': 
           if POE_TOKEN == "":   
@@ -158,12 +149,12 @@ async def process_image(url):
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 async def option_selector(call):
-    c.execute('''SELECT * FROM settings WHERE user_id=?''', (call.from_user.id,))
-    row = c.fetchone()
-    if row:
-        user_id, api_name, model, message_id = row
+    result = db.get_settings(call.from_user.id)
+    if result is None:
+        api_name, model = 'AI Assist','ChatGPT'
+        db.insert_settings(call.from_user.id, api_name, model)
     else:
-        user_id, api_name, model, message_id = call.from_user.id, 'deepai', 'ChatGPT', ''
+        api_name, model = result
     if call.data in _missingpoetoken:
         if str(call.data) == 'Add now':
             await bot.send_message(call.message.chat.id,'OK Sign up to Poe and head over to the site ctrl+shift+i\
@@ -180,30 +171,21 @@ async def option_selector(call):
                 _missing_poe_token(call.message)
                 return
         elif api_name == 'forefront':
-            api_name = 'deepai'
-            text = 'Not yet implemented. Changing provider to deepai'
+            api_name = 'AI Assist'
+            text = 'Not yet implemented. Changing provider to AI Assist'
             await bot.send_message(call.message.chat.id,text)
             return
-        elif api_name == 'AI Assist':
-            if message_id == '':
-                completion = aiassist.Completion.create(prompt=instruction)
-                message_id = completion['parentMessageId']
-                c.execute('''UPDATE settings SET message_id=? WHERE user_id=?''', (message_id, user_id))
         api_name = str(call.data)
-        c.execute('''UPDATE settings SET api_name=? WHERE user_id=?''', (api_name, user_id))
+        db.upate_settings(call.from_user.id,api_name=api_name)
         await bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         model = str(call.data)
         await bot.send_message( call.message.chat.id,model+' is active')
-        c.execute('''UPDATE settings SET model=? WHERE user_id=?''', (model, user_id))
-    conn.commit()
+        db.update_settings(call.from_user.id,model=model)
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
 async def start_handler(message):
-    # Insert the user into the settings table if they don't exist yet
-    c.execute('''INSERT OR IGNORE INTO settings (user_id, api_name, model,message_id)
-                 VALUES (?, ?, ?, ?)''', (message.chat.id, 'deepai', 'ChatGPT',''))
-    conn.commit()
+    db.insert_settings(message.chat.id, 'AI Assist', 'ChatGPT','')
     await bot.send_message(message.chat.id, text="Hello, Welcome to GPT4free.\n Current provider:"+api_name+\
                      "\nUse command /changeprovider or /changebot to change to a different bot\n\
                         Ask me anything I am here to help you.")
@@ -217,9 +199,12 @@ async def help_handler(message):
 #changebot command handler
 @bot.message_handler(commands=['changebot'])
 async def changebot_handler(message):
-    c.execute('''SELECT * FROM settings WHERE user_id=?''', (message.from_user.id,))
-    row = c.fetchone()
-    user_id, api_name, model, message_id = row
+    result = db.get_settings(message.from_user.id)
+    if result is None:
+        api_name, model = 'AI Assist','ChatGPT'
+        db.insert_settings(message.from_user.id, api_name, model)
+    else:
+        api_name, model = result
     if api_name != 'quora':
         await bot.send_message(message.chat.id,'changebot command only available for poe')
         return
@@ -239,12 +224,12 @@ async def changeprovider_handler(message):
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 async def reply_handler(call):
-    c.execute('''SELECT api_name, model FROM settings WHERE user_id=?''', (call.from_user.id,))
-    row = c.fetchone()
-    if row:
-        api_name, model = row
+    result = db.get_settings(call.from_user.id)
+    if result is None:
+        api_name, model = 'AI Assist','ChatGPT'
+        db.insert_settings(call.from_user.id, api_name, model)
     else:
-        api_name, model = 'deepai', 'ChatGPT'
+        api_name, model = result
     
     await bot.send_chat_action(call.chat.id, "typing")
     sent = await bot.send_message(call.chat.id, "Please wait while i think")
@@ -260,22 +245,19 @@ async def reply_handler(call):
         await bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))
         await bot.edit_message_text(chat_id=call.chat.id, message_id=message_id, text="Image Generated")      
     else:
-        c.execute('''INSERT INTO history (user_id, role, content)
-                 VALUES (?, ?, ?)''', (call.chat.id, 'user', call.text))
-        c.execute('''INSERT INTO history (user_id, role, content)
-                 VALUES (?, ?, ?)''', (call.chat.id, 'assistant', text))
-        conn.commit()
+        db.insert_history(call.chat.id, 'user', call.text)
+        db.insert_history(call.chat.id, 'assistant', text)
         await bot.delete_message(chat_id=call.chat.id, message_id=message_id)
         await bot.send_message(call.chat.id,text)
 #messages with audio
 @bot.message_handler(content_types=['voice', 'audio'])
 async def audio_handler(call):
-    c.execute('''SELECT api_name, model FROM settings WHERE user_id=?''', (call.from_user.id,))
-    row = c.fetchone()
-    if row:
-        api_name, model = row
+    result = db.get_settings(call.from_user.id)
+    if result is None:
+        api_name, model = 'AI Assist','ChatGPT'
+        db.insert_settings(call.from_user.id, api_name, model)
     else:
-        api_name, model = 'deepai', 'ChatGPT'
+        api_name, model = result
     audio_file_path = await download_audio_file_from_message(call)
     print(audio_file_path)
     transcribed_audio = await bn.transcribe_audio(audio_file_path)
@@ -300,3 +282,4 @@ if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())
 
+db.close_connection()
