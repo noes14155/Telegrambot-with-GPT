@@ -1,28 +1,27 @@
 # Telegrambot-with-GPT4free
 Simple telegram bot with [GPT4free](https://github.com/xtekky/gpt4free)   
 Thanks to [xtekky](https://github.com/xtekky)  
-Supports poe.com, thb.ai, you.com, deepai.org   
+Supports poe.com, thb.ai, you.com, deepai.org, AI Assist   
 Supports multiple bots in poe.com   
 Hugging face token is only required for image captioning.    
+Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
+Supports voice transcription with [openai whisper](https://github.com/openai/whisper)    
 Text to image (stable diffusion) uses hugging face hosted space feel free to change to your own space   
 ```
-HG_img2text = 'https://api-inference.huggingface.co/models/nlpconnect/vit-gpt2-image-captioning'    
+HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'    
 HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'     
 ```
 line 15 and 16 in main.py
 
 
-   
-To do   
-Add usesless   
-Add forefront    
+       
 
 ## Install
 
 
 Download or clone this repository   
 Change environment variables in .env file. [Environment Variables](#environment-variables)   
-install the requirements    
+install the requirements(Install takes more time due to openai whisper package and its dependencies)    
 ```
 pip install -r requirements.txt
 ```
@@ -50,11 +49,11 @@ To run this project, you will need to create a .env file and add the following e
 Get this by messaging @botfather Refer to https://core.telegram.org/bots/tutorial#obtain-your-bot-token
 
 `POE_TOKEN`
-Not mandatory (leave it blank if you don't want to use quora(poe.com))
+Optional (leave it blank if you don't want to use quora(poe.com))
 Sign up to Poe and head over to the site
 ctrl+shift+i to open developer console
 Go to Application -> Cookies -> https://poe.com
 Find the p-b cookie and copy its value, this will be your Poe-token
 
 `HG_TOKEN`
-Sign up on hugging face and get the token from [here](https://huggingface.co/settings/tokens)
+Optional(Required forimage captioning). Sign up on hugging face and get the token from [here](https://huggingface.co/settings/tokens)
