@@ -25,3 +25,5 @@ pytesseract
 tox
 opencv-python
 numpy
+duckduckgo_search
+imaginepy

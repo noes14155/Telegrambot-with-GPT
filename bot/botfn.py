@@ -1,5 +1,6 @@
 import requests
 import whisper
+from duckduckgo_search import DDGS
 
 class botfn:
     def __init__(self):
@@ -16,20 +17,27 @@ class botfn:
 
 
     async def search_ddg(self, query):
-        params = {
-            'q': query,
-            'format': 'json',
-            'no_redirect': '1',
-        }
-        response = await requests.get(self.ddg_url, params=params)
-        if response.status_code == 200:
-            results = response.json()['Results']
-            if len(results) > 0:
-                result_strs = []
-                for result in results:
-                    result_strs.append(f'{result["Text"]}\n{result["FirstURL"]}')
-                return '\n\n'.join(result_strs)
-            else:
-                return 'No results found.'
-        else:
-            return 'Error searching DuckDuckGo.'
+        with DDGS() as ddgs:
+            results = ddgs.answers(query)
+
+        result = []
+        for r in results:
+           result.append(r)
+           if len(result)>5:
+               break
+        return result        
+    async def news_ddg(self,query='latest world news'):
+      with DDGS() as ddgs:
+        ddgs_news_gen = ddgs.news(
+                        keywords=query,
+                        region="wt-wt",
+                        safesearch="Off",
+                        timelimit="m",
+                        )
+        
+        result = []
+        for r in ddgs_news_gen:
+           result.append(r)
+          # if len(result)>5:
+          #     break
+        return result

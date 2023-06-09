@@ -4,11 +4,11 @@ import telebot
 import asyncio
 import aiohttp
 import random
-from gpt4free import quora
-from gpt4free import you
-from gpt4free import theb
-from gpt4free import deepai
-from gpt4free import aiassist
+from models import quora
+from models import you
+from models import theb
+from models import deepai
+from models import aiassist
 from bot import botfn
 from bot import botdb
 from bot import botocr
@@ -234,6 +234,23 @@ async def changeprovider_handler(message):
     for i in providers:
         _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
     await bot.send_message(message.chat.id,'Select which provider to use', reply_markup=_providers)
+#News command handler
+@bot.message_handler(commands=['news'])
+async def news_handler(call):
+    chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
+    query = call.text[6:]
+    if query:
+        response = await bn.news_ddg(call.text[6:])
+    else:
+        response = await bn.news_ddg()
+    text = ''
+    for result in response:
+        text = text + '\n' + result['title'] + result['url']
+    prompt = instruction+'\n[System: These news articles and links were provided by the system and not the user. Summarize these news articles into bullet points and provide links]'+text
+
+    response = await get_aiassist_response(prompt)
+    await bot.send_message(call.chat.id,response)
+    
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 async def reply_handler(call):
