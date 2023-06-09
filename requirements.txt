@@ -23,4 +23,5 @@ aiohttp
 openai-whisper
 pytesseract
 tox
-cv2
+opencv-python
+numpy

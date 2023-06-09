@@ -269,14 +269,16 @@ async def imageaudio_handler(call):
         text = await process_image(image_url)
         await bot.send_message(call.chat.id,text)
         ocr_text = ocr.process_image(image_url)
-        if ocr_text is not None:
+        if ocr_text:
             prompt = instruction + '\n[System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.]'\
                   + text + \
                   '\n[System: This is a image context provided by a OCR model which is not stable. If it\'s gibberish leave it out of your answer if its readable answer accordingly]'\
-                  + ocr_text
+                  + ocr_text  
+            text = text + ocr_text
+            
         else:
             prompt = instruction + '\n[System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.]' + text
-        text = text + ocr_text
+      
     elif call.content_type == 'audio' or 'voice':
         audio_file_path = await download_audio_file_from_message(call)
         text = await bn.transcribe_audio(audio_file_path)
