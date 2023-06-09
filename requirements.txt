@@ -21,3 +21,6 @@ pycryptodome
 gradio_client
 aiohttp
 openai-whisper
+pytesseract
+tox
+cv2

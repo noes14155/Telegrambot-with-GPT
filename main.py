@@ -9,8 +9,9 @@ from gpt4free import you
 from gpt4free import theb
 from gpt4free import deepai
 from gpt4free import aiassist
-import botfn
-import botdb
+from bot import botfn
+from bot import botdb
+from bot import botocr
 import os
 from gradio_client import Client
 
@@ -44,6 +45,7 @@ messages = [
 ]
 bn = botfn.botfn()
 db = botdb.Database('chatbot.db')
+ocr = botocr.OCR(config=" --psm 3 --oem 3 -l script/Devanagari")
 db.create_tables()
 if os.path.exists(instruction_file):
     with open(instruction_file, 'r') as file:
@@ -266,7 +268,15 @@ async def imageaudio_handler(call):
         image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_info.file_path}"
         text = await process_image(image_url)
         await bot.send_message(call.chat.id,text)
-        prompt = instruction + '\n[System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.]' + text
+        ocr_text = ocr.process_image(image_url)
+        if ocr_text is not None:
+            prompt = instruction + '\n[System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.]'\
+                  + text + \
+                  '\n[System: This is a image context provided by a OCR model which is not stable. If it\'s gibberish leave it out of your answer if its readable answer accordingly]'\
+                  + ocr_text
+        else:
+            prompt = instruction + '\n[System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.]' + text
+        text = text + ocr_text
     elif call.content_type == 'audio' or 'voice':
         audio_file_path = await download_audio_file_from_message(call)
         text = await bn.transcribe_audio(audio_file_path)
