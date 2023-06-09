@@ -27,3 +27,4 @@ opencv-python
 numpy
 duckduckgo_search
 imaginepy
+python-dotenv

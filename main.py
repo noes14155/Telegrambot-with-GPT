@@ -13,11 +13,13 @@ from bot import botfn
 from bot import botdb
 from bot import botocr
 import os
+from dotenv import load_dotenv
 from gradio_client import Client
 
-BOT_TOKEN = os.environ['BOT_TOKEN']
-POE_TOKEN = os.environ['POE_TOKEN']
-HG_TOKEN = os.environ['HG_TOKEN']
+load_dotenv()
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+POE_TOKEN = os.getenv('POE_TOKEN')
+HG_TOKEN = os.getenv('HG_TOKEN')
 #HG_API = os.environ[HG_API]
 HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
 HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'
@@ -43,6 +45,7 @@ messages = [
     "Hold tight...","Be right back...","We're on it...","Doing our thing...","Sit tight...",
     "Almost there...","Just a little longer...","Processing...","Stay put...",
 ]
+
 bn = botfn.botfn()
 db = botdb.Database('chatbot.db')
 ocr = botocr.OCR(config=" --psm 3 --oem 3 -l script/Devanagari")
@@ -152,6 +155,7 @@ async def process_image(url):
                 return 'This image looks like a ' + result[0]['generated_text']
             else:
                 return await resp.content.read()
+
 async def send_with_waiting_message(chat_id):
     waiting_message = random.choice(messages)
     sent = await bot.send_message(chat_id, waiting_message)
