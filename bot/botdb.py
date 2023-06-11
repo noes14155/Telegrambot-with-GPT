@@ -1,7 +1,12 @@
 import sqlite3
+import os
 
 class Database:
     def __init__(self, db_file):
+        # Check if the database file exists
+        if not os.path.exists(db_file):
+            # If the file does not exist, create it
+            open(db_file, 'a').close()
         self.conn = sqlite3.connect(db_file)
         self.create_tables()
 

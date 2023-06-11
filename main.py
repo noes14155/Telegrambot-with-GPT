@@ -103,7 +103,10 @@ async def stream(call,model,api_name):
                 text += chunk 
         elif api_name == 'AI Assist':
             history=''
-            prompt=instruction+'\n'+history+'\n'+call.text
+            search_results = await bn.search_ddg(call.text)
+            if not search_results:
+                search_results = ''
+            prompt=instruction+'\n'+history+'\n'+call.text+'\n'+search_results+'\nAnswer the user, provide links if necessary'
             history = '\n'.join(row[1] for row in rows)
             text = await get_aiassist_response(prompt=prompt)
            
@@ -265,6 +268,7 @@ async def reply_handler(call):
     else:
         api_name, model = result
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
+   
     try:
         text_task = asyncio.create_task(stream(call,model,api_name))
         text = await text_task
