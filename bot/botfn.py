@@ -1,13 +1,36 @@
 import datetime
-import requests
+import uuid
 import whisper
 from duckduckgo_search import DDGS
+from imaginepy import AsyncImagine, Style, Ratio
 
 class botfn:
     def __init__(self):
         self.model = whisper.load_model('tiny')
         #self.ddg_url = 'https://api.duckduckgo.com/'
 
+    async def generate_image(self,image_prompt, style_value, ratio_value, negative):
+        imagine = AsyncImagine()
+        filename = "image.png"
+        style_enum = Style[style_value]
+        ratio_enum = Ratio[ratio_value]
+        img_data = await imagine.sdprem(
+            prompt=image_prompt,
+            style=style_enum,
+            ratio=ratio_enum,
+            priority="1",
+            high_res_results="1",
+            steps="70",
+            negative=negative
+        )
+        try:
+            with open(filename, mode="wb") as img_file:
+                img_file.write(img_data)
+        except Exception as e:
+            print(f"An error occurred while writing the image to file: {e}")
+            return None
+        await imagine.close()
+        return filename
     async def transcribe_audio(self, audio_file_path):
         with open(audio_file_path, 'rb') as audio_file:
             content = audio_file.read()

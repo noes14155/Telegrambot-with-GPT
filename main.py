@@ -1,20 +1,15 @@
-
-from telebot.async_telebot import AsyncTeleBot
-import telebot
 import asyncio
 import aiohttp
 import random
-from models import quora
-from models import you
-from models import theb
-from models import deepai
-from models import aiassist
-from bot import botfn
-from bot import botdb
-from bot import botocr
 import os
+from telebot.async_telebot import AsyncTeleBot
+from telebot import types
 from dotenv import load_dotenv
 from gradio_client import Client
+from models import quora,you,theb,deepai,aiassist
+from bot import botfn,botdb,botocr
+
+
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -22,7 +17,6 @@ POE_TOKEN = os.getenv('POE_TOKEN')
 HG_TOKEN = os.getenv('HG_TOKEN')
 #HG_API = os.environ[HG_API]
 HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
-HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'
 #Create new instance of bot
 bot = AsyncTeleBot(BOT_TOKEN)
 #models avaiable at poe.com
@@ -35,7 +29,7 @@ models = {
     'Dragonfly': 'nutria',
     'NeevaAI': 'hutia',
 }
-providers = ['deepai','you','AI Assist','theb','quora','Stable Diffusion(generate image)']
+providers = ['deepai','you','AI Assist','theb','quora']
 _missingpoetoken = ['Add now','Later']
 headers = {"Authorization": f"Bearer {HG_TOKEN}"}
 instruction_file = 'instructions.txt'
@@ -45,7 +39,42 @@ messages = [
     "Hold tight...","Be right back...","We're on it...","Doing our thing...","Sit tight...",
     "Almost there...","Just a little longer...","Processing...","Stay put...",
 ]
-
+Style = {
+	'Imagine V3':'IMAGINE_V3',
+    'Imagine V4 Beta':'IMAGINE_V4_Beta',
+    'Imagine V4 creative':'V4_CREATIVE',
+    'Anime':'ANIME_V2',
+    'Realistic':'REALISTIC',
+    'Disney':'DISNEY',
+    'Studio Ghibli':'STUDIO_GHIBLI',
+    'Graffiti':'GRAFFITI',
+    'Medieval':'MEDIEVAL',
+    'Fantasy':'FANTASY',
+    'Neon':'NEON',
+    'Cyberpunk':'CYBERPUNK',
+    'Landscape':'LANDSCAPE',
+    'Japanese Art':'JAPANESE_ART',
+    'Steampunk':'STEAMPUNK',
+    'Sketch':'SKETCH',
+    'Comic Book':'COMIC_BOOK',
+    'Cosmic':'COMIC_V2',
+    'Logo':'LOGO',
+    'Pixel art':'PIXEL_ART',
+    'Interior':'INTERIOR',
+    'Mystical':'MYSTICAL',
+    'Super realism':'SURREALISM',
+    'Minecraft':'MINECRAFT',
+    'Dystopian':'DYSTOPIAN'
+    }
+Ratio = {'1x1':'RATIO_1X1',
+         '9x16':'RATIO_9X16',
+         '16x9':'RATIO_16X9',
+         '4x3':'RATIO_4X3',
+         '3x2':'RATIO_3X2'}
+style_value = ''
+ratio_value = ''
+img_query = ''
+userstep = 1
 bn = botfn.botfn()
 db = botdb.Database('chatbot.db')
 ocr = botocr.OCR(config=" --psm 3 --oem 3 -l script/Devanagari")
@@ -109,11 +138,6 @@ async def stream(call,model,api_name):
             prompt=instruction+'\n'+history+'\n'+call.text+'\n'+search_results+'\nAnswer the user, provide links if necessary'
             history = '\n'.join(row[1] for row in rows)
             text = await get_aiassist_response(prompt=prompt)
-           
-        elif api_name == 'Stable Diffusion(generate image)':
-            client = Client(HG_text2img)
-            text = client.predict(call.text,api_name="/predict")
-        print(text)
         return text
 
 #Missing poe token handler function
@@ -128,7 +152,6 @@ async def handle_poe_token(message):
     await bot.send_message(chat_id=message.chat.id, text='You entered: ' + message.text)
     global POE_TOKEN
     POE_TOKEN = str(message.text)
-
 
 async def download_audio_file_from_message(message):
     if message.audio is not None:
@@ -166,9 +189,24 @@ async def send_with_waiting_message(chat_id):
     chat_action_task = asyncio.create_task(bot.send_chat_action(chat_id, "typing"))
     await asyncio.sleep(3) 
     await bot.delete_message(chat_id=chat_id, message_id=message_id)
+
+async def handle_imagine_choices(call):
+    style_options = [(display_name, value) for display_name, value in Style.items()]
+    style_keyboard = types.InlineKeyboardMarkup()
+    chunks = [style_options[i:i+4] for i in range(0, len(style_options), 4)]
+    for chunk in chunks:
+        row_buttons = [types.InlineKeyboardButton(display_name, callback_data=value) for (display_name, value) in chunk]
+        style_keyboard.row(*row_buttons)
+    await bot.send_message(
+                    call.chat.id, 
+                    "Great Please choose a style:",
+                    reply_markup=style_keyboard
+                )
+
 #funtion to handle keyboards
 @bot.callback_query_handler(func=lambda call: True)
 async def option_selector(call):
+    global style_value,ratio_value,img_query
     result = db.get_settings(call.from_user.id)
     if result is None:
         api_name, model = 'AI Assist','ChatGPT'
@@ -196,12 +234,26 @@ async def option_selector(call):
             await bot.send_message(call.message.chat.id,text)
             return
         api_name = str(call.data)
-        db.upate_settings(call.from_user.id,api_name=api_name)
+        db.update_settings(call.from_user.id,api_name=api_name)
         await bot.send_message( call.message.chat.id,api_name+' is active')
     elif call.data in models:
         model = str(call.data)
-        await bot.send_message( call.message.chat.id,model+' is active')
+        await bot.send_message(call.message.chat.id,model+' is active')
         db.update_settings(call.from_user.id,model=model)
+    elif call.data in Style.values():
+        style_value = call.data
+        ratio_keyboard = types.InlineKeyboardMarkup()
+        for display_name, value in Ratio.items():
+            ratio_keyboard.add(types.InlineKeyboardButton(display_name, callback_data=value))
+        await bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id,
+                          text='Great now choose aspect ratio', reply_markup=ratio_keyboard)
+    elif call.data in Ratio.values():
+        ratio_value = call.data
+        await bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Please wait while I generate an image.")
+        filename = await bn.generate_image(image_prompt=img_query,style_value=style_value,ratio_value=ratio_value,negative='')
+        await bot.edit_message_text(chat_id=call.message.chat.id,message_id=call.message.message_id, text="Image generated")
+        await bot.send_photo(chat_id=call.message.chat.id, photo=open(filename, 'rb'))    
+        os.remove(filename)
 #hello or start command handler
 @bot.message_handler(commands=['hello', 'start'])
 async def start_handler(message):
@@ -229,17 +281,16 @@ async def changebot_handler(message):
     if api_name != 'quora':
         await bot.send_message(message.chat.id,'changebot command only available for poe')
         return
-    _models = telebot.types.InlineKeyboardMarkup() 
-    #making buttons with the model dictionary 
+    _models = types.InlineKeyboardMarkup() 
     for i in models:
-        _models.add(telebot.types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
+        _models.add(types.InlineKeyboardButton(i+'(Codename:'+models[i]+')', callback_data=i))
     await bot.send_message(message.chat.id,'Select model to use', reply_markup=_models)
 #changeprovider command handler
 @bot.message_handler(commands=['changeprovider'])
 async def changeprovider_handler(message):
-    _providers = telebot.types.InlineKeyboardMarkup()
+    _providers = types.InlineKeyboardMarkup()
     for i in providers:
-        _providers.add(telebot.types.InlineKeyboardButton(i, callback_data=i))
+        _providers.add(types.InlineKeyboardButton(i, callback_data=i))
     await bot.send_message(message.chat.id,'Select which provider to use', reply_markup=_providers)
 #News command handler
 @bot.message_handler(commands=['news'])
@@ -257,10 +308,23 @@ async def news_handler(call):
 
     response = await get_aiassist_response(prompt)
     await bot.send_message(call.chat.id,response)
-    
+#Img command handler
+@bot.message_handler(commands=['img'])
+async def img_handler(call):
+    await bot.send_message(call.chat.id,'Let\'s imagine something. Enter prompt')
+    global userstep
+    userstep = 0
+
 #Messages other than commands handled 
 @bot.message_handler(content_types='text')
 async def reply_handler(call):
+    global userstep
+    if userstep == 0:
+        userstep = 1
+        global img_query
+        img_query = call.text
+        await handle_imagine_choices(call)
+        return
     result = db.get_settings(call.from_user.id)
     if result is None:
         api_name, model = 'AI Assist','ChatGPT'
@@ -268,7 +332,6 @@ async def reply_handler(call):
     else:
         api_name, model = result
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
-   
     try:
         text_task = asyncio.create_task(stream(call,model,api_name))
         text = await text_task
@@ -277,9 +340,6 @@ async def reply_handler(call):
             text = "Daily Limit reached for current bot. please use another bot or another provider"
         else:
             text = str(error)
-    if api_name == 'Stable Diffusion(generate image)':
-        await bot.send_photo(chat_id=call.chat.id, photo=open(text, 'rb'))      
-    else:
         db.insert_history(call.chat.id, 'user', call.text)
         db.insert_history(call.chat.id, 'assistant', text)
         message_task = asyncio.create_task(bot.send_message(call.chat.id,text))
@@ -308,7 +368,8 @@ async def imageaudio_handler(call):
         audio_file_path = await download_audio_file_from_message(call)
         text = await bn.transcribe_audio(audio_file_path)
         sent = await bot.send_message(call.chat.id,'Transcribed audio:' + text)
-        prompt = instruction+'\n[System: This is a transcription of the user\'s command provided by an voice to text model. May contain transcription errors reply accordingly]'+text
+        prompt = instruction+'\n[System: The following is a transcription of the user\'s command provided by an voice to text model. May contain transcription errors reply accordingly and if the text is empty of garbled reply with "I didn\'t understand that]'+text
+        os.remove(audio_file_path)
     else:
         return
     response = await get_aiassist_response(prompt)

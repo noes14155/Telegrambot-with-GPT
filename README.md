@@ -1,18 +1,18 @@
 # Telegrambot-with-GPT4free
 Simple telegram bot with [GPT4free](https://github.com/xtekky/gpt4free)   
 Thanks to [xtekky](https://github.com/xtekky)  
-Supports poe.com, thb.ai, you.com, deepai.org, AI Assist   
-Supports multiple bots in poe.com   
+Supports poe.com, thb.ai, you.com, deepai.org, AI Assist.   
+Supports multiple bots in poe.com.   
 Hugging face token is only required for image captioning.    
 Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
-Supports voice transcription with [openai whisper](https://github.com/openai/whisper)    
-Text to image (stable diffusion) uses hugging face hosted space feel free to change to your own space   
+If you want to use any other model change HG_img2text value
 ```
 HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'    
-HG_text2img = 'https://noes14155-runwayml-stable-diffusion-v1-5.hf.space/'     
 ```
-line 15 and 16 in main.py
 
+Internet access using [duckduckgo_search](https://github.com/deedy5/duckduckgo_search)
+Supports voice transcription with [openai whisper](https://github.com/openai/whisper)    
+Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)
 
        
 
