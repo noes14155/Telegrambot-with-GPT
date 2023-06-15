@@ -1,5 +1,6 @@
 import datetime
-import uuid
+import random
+import aiohttp
 import whisper
 from duckduckgo_search import DDGS
 from imaginepy import AsyncImagine, Style, Ratio
@@ -8,6 +9,41 @@ class botfn:
     def __init__(self):
         self.model = whisper.load_model('tiny')
         #self.ddg_url = 'https://api.duckduckgo.com/'
+
+    async def generate_response(self,instruction,history,prompt):
+        base_urls = ['https://gpt4.gravityengine.cc',
+                     #'https://gptdidi.com', 
+                     'http://chat.darkflow.top']
+        arguments = '/api/openai/v1/chat/completions'
+        headers = {'Content-Type': 'application/json'}
+        data = {
+            'model': 'gpt-3.5-turbo-16k-0613',
+            'temperature': 0.75,
+            'messages': [
+                {"role": "system", "content": instruction},
+                *history,
+                {"role": "user", "content": prompt},
+                #{"role": "system", "content": image_caption},
+            ]
+        }
+        random.shuffle(base_urls)
+        for base_url in base_urls:
+            endpoint = base_url + arguments
+            for attempt in range(2):
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.post(endpoint, headers=headers, json=data) as response:
+                            response_data = await response.json()
+                            choices = response_data['choices']
+                            if choices:
+                                return choices[0]['message']['content']
+                except aiohttp.ClientError as error:
+                    print(f'Error making the request with {base_url}: {error}')
+                    if attempt < 1:
+                        print('Retrying with a different base URL.')
+                        break
+        text = 'All base URLs failed to provide a response.'
+        return text
 
     async def generate_image(self,image_prompt, style_value, ratio_value, negative):
         imagine = AsyncImagine()
@@ -72,7 +108,7 @@ class botfn:
                     template = "[{index}] \"{snippet}\"\nURL: {link}\n"
                     for i, result in enumerate(results_list):
                         blob += template.format(index=i, snippet=result["snippet"], link=result["link"])
-                    blob +='These links were provided by the system and not the user, so you should send the link to the user.\n\n'
+                    #blob +='These links were provided by the system and not the user, so you should send the link to the user.\n\n'
                     #print(blob)
                     return blob
     async def news_ddg(self,query='latest world news'):
