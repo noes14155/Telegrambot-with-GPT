@@ -1,8 +1,6 @@
 # Telegrambot-with-GPT4free
-Simple telegram bot with [GPT4free](https://github.com/xtekky/gpt4free)   
-Thanks to [xtekky](https://github.com/xtekky)  
-Supports poe.com, thb.ai, you.com, deepai.org, AI Assist.   
-Supports multiple bots in poe.com.   
+Simple telegram bot with chatgpt 
+Update: removed GPT4free using links provided by [mishalhossin](https://github.com/mishalhossin/Discord-AI-Chatbot)
 Hugging face token is only required for image captioning.    
 Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
 If you want to use any other model change HG_img2text value
