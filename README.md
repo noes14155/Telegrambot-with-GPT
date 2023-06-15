@@ -46,12 +46,5 @@ To run this project, you will need to create a .env file and add the following e
 `BOT_TOKEN`
 Get this by messaging @botfather Refer to https://core.telegram.org/bots/tutorial#obtain-your-bot-token
 
-`POE_TOKEN`
-Optional (leave it blank if you don't want to use quora(poe.com))
-Sign up to Poe and head over to the site
-ctrl+shift+i to open developer console
-Go to Application -> Cookies -> https://poe.com
-Find the p-b cookie and copy its value, this will be your Poe-token
-
 `HG_TOKEN`
 Optional(Required forimage captioning). Sign up on hugging face and get the token from [here](https://huggingface.co/settings/tokens)

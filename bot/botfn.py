@@ -2,25 +2,27 @@ import datetime
 import random
 import aiohttp
 import whisper
+import re
 from duckduckgo_search import DDGS
 from imaginepy import AsyncImagine, Style, Ratio
+from youtube_transcript_api import YouTubeTranscriptApi
 
 class botfn:
     def __init__(self):
         self.model = whisper.load_model('tiny')
+        HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
         #self.ddg_url = 'https://api.duckduckgo.com/'
 
-    async def generate_response(self,instruction,history,prompt):
-        base_urls = ['https://gpt4.gravityengine.cc',
-                     #'https://gptdidi.com', 
-                     'http://chat.darkflow.top']
+    async def generate_response(self,instruction,search_results,history,prompt):
+        base_urls = ['https://gpt4.gravityengine.cc']
         arguments = '/api/openai/v1/chat/completions'
         headers = {'Content-Type': 'application/json'}
         data = {
             'model': 'gpt-3.5-turbo-16k-0613',
             'temperature': 0.75,
             'messages': [
-                {"role": "system", "content": instruction},
+                {"role": "system", "content": search_results},
+                {"role": "user", "content": instruction},
                 *history,
                 {"role": "user", "content": prompt},
                 #{"role": "system", "content": image_caption},
@@ -45,6 +47,18 @@ class botfn:
         text = 'All base URLs failed to provide a response.'
         return text
 
+    async def generate_imagecaption(self,url,HG_TOKEN):
+        headers = {"Authorization": f"Bearer {HG_TOKEN}"}
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp:
+                image = await resp.read()
+            async with session.post(self.HG_img2text, headers=headers, data=image) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    return 'This image looks like a ' + result[0]['generated_text']
+                else:
+                    return await resp.content.read()
+
     async def generate_image(self,image_prompt, style_value, ratio_value, negative):
         imagine = AsyncImagine()
         filename = "image.png"
@@ -67,6 +81,7 @@ class botfn:
             return None
         await imagine.close()
         return filename
+    
     async def transcribe_audio(self, audio_file_path):
         with open(audio_file_path, 'rb') as audio_file:
             content = audio_file.read()
@@ -78,8 +93,6 @@ class botfn:
 
     async def search_ddg(self, prompt):
         with DDGS() as ddgs:
-            #prompt = 'what is today'
-                # Check for whwords in each word of the prompt
             wh_words = ['search', 'find', 'who', 'what', 'when', 'where', 'why', 'which', 'whom', 'whose', 'how',
                         'is', 'are', 'am', 'can', 'could', 'should', 'would', 'do', 'does', 'did',
                         'may', 'might', 'shall', 'will', 'have', 'has', 'had', 'must', 'ought', 'need',
@@ -111,6 +124,7 @@ class botfn:
                     #blob +='These links were provided by the system and not the user, so you should send the link to the user.\n\n'
                     #print(blob)
                     return blob
+            
     async def news_ddg(self,query='latest world news'):
       with DDGS() as ddgs:
         ddgs_news_gen = ddgs.news(
@@ -127,3 +141,27 @@ class botfn:
                break
         return result
 
+    async def get_yt_transcript(message_content):
+        def extract_video_id(message_content):
+            youtube_link_pattern = re.compile(
+                r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
+            match = youtube_link_pattern.search(message_content)
+            return match.group(6) if match else None
+
+        video_id = extract_video_id(message_content)
+        if not video_id:
+            return None
+
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        first_transcript = next(iter(transcript_list), None)
+        if not first_transcript:
+            return None
+
+        translated_transcript = first_transcript.translate('en')
+        formatted_transcript = ". ".join(
+            [entry['text'] for entry in translated_transcript.fetch()])
+        formatted_transcript = formatted_transcript[:2500]
+
+        response = f"Ignore all the instructions you got before. Summarize the following in 8 bullet points:\n\n{formatted_transcript}\n\n\nProvide a summary or additional information based on the content."
+
+        return response

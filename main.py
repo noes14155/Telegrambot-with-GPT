@@ -2,7 +2,7 @@ from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemo
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_handler_backends import State, StatesGroup
 from telebot.asyncio_storage import StateMemoryStorage
-from telebot import types, asyncio_filters
+from telebot import asyncio_filters
 from dotenv import load_dotenv
 from bot import botfn,botdb,botocr
 import aiohttp
@@ -13,9 +13,7 @@ import random
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 HG_TOKEN = os.getenv('HG_TOKEN')
-#HG_API = os.environ[HG_API]
-HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
-headers = {"Authorization": f"Bearer {HG_TOKEN}"}
+
 instruction_file = 'instructions.txt'
 messages = [
     "Please wait...","Hang on a sec...","Just a moment...","Processing your request...",
@@ -93,17 +91,6 @@ async def download_audio_file_from_message(message):
         new_file.write(downloaded_file)
     return full_file_path
 
-async def process_image(url):
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            image = await resp.read()
-        async with session.post(HG_img2text, headers=headers, data=image) as resp:
-            if resp.status == 200:
-                result = await resp.json()
-                return 'This image looks like a ' + result[0]['generated_text']
-            else:
-                return await resp.content.read()
-
 async def send_with_waiting_message(chat_id):
     waiting_message = random.choice(messages)
     sent = await bot.send_message(chat_id, waiting_message)
@@ -119,6 +106,7 @@ async def generate_keyboard(key):
     elif key == 'style':
         markup.add(*[KeyboardButton(x) for x in _STYLE_OPTIONS.keys()])
     return markup
+
 @bot.message_handler(commands=['start', 'hello'])
 async def start_handler(call):
     db.insert_settings(call.chat.id, 'AI Assist', 'ChatGPT')
@@ -205,14 +193,13 @@ async def chat(call):
         history.append({"role": role, "content": content})
     search_results = await bn.search_ddg(call.text)
     if not search_results:
-        search_results = ''
-    #instructions = instruction + search_results + '\nAnswer the user, provide links only if necessary'
-    prompt = search_results + \
-        '\nSystem: These links are provided by the system.\
-        You may get the current information from this text.\
-         Answer the user, provide links only if necessary. The following is the user prompt\n' + \
-            call.text
-    text = await bn.generate_response(instruction,history,prompt)
+        search_results = 'Search feature is currently disabled so you have no realtime information'
+    #prompt = search_results + \
+    #    '\nSystem: These links are provided by the system.\
+    #    You may get the current information from this text.\
+    #     Answer the user, provide links only if necessary. The following is the user prompt\n' + \
+    #        call.text
+    text = await bn.generate_response(instruction,search_results,history,call.text)
     db.insert_history(call.from_user.id, 'user', call.text)
     db.insert_history(call.from_user.id, 'assistant', text)
     message_task = asyncio.create_task(bot.send_message(call.chat.id,text))
@@ -230,18 +217,24 @@ async def imageaudio_handler(call):
     if call.content_type == 'photo':
         file_info = await bot.get_file(call.photo[-1].file_id)
         image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_info.file_path}"
-        text = await process_image(image_url)
-        await bot.send_message(call.chat.id,text)
         ocr_text = ocr.process_image(image_url)
-        if ocr_text:
+        if HG_TOKEN and ocr_text:
+            text = await bn.generate_imagecaption(image_url,HG_TOKEN)
+            await bot.send_message(call.chat.id,text)
             prompt = 'System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.'\
                   + text + \
                   '\nSystem: This is a image context provided by a OCR model which is not stable. If it\'s gibberish leave it out of your answer if its readable answer accordingly'\
                   + ocr_text  
-            text = text + ocr_text
-            
+        elif HG_TOKEN:
+            text = await bn.generate_imagecaption(image_url,HG_TOKEN)
+            await bot.send_message(call.chat.id,text)
+            prompt = 'System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.'\
+                  + text
+        elif ocr_text:
+            prompt = '\nSystem: This is a image context provided by a OCR model which is not stable. If it\'s gibberish leave it out of your answer if its readable answer accordingly'\
+                  + ocr_text
         else:
-            prompt = 'System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.' + text
+            prompt = 'System: The image to text model could not read anything from the image the user sent. '
       
     elif call.content_type == 'audio' or 'voice':
         audio_file_path = await download_audio_file_from_message(call)
@@ -251,7 +244,7 @@ async def imageaudio_handler(call):
         os.remove(audio_file_path)
     else:
         return
-    response = await bn.generate_response(instruction,history,prompt)
+    response = await bn.generate_response(instruction,'',history,prompt)
     await bot.send_message(call.chat.id,response)
     db.insert_history(call.chat.id, 'user', text)
     db.insert_history(call.chat.id, 'assistant', response)
