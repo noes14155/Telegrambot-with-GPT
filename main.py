@@ -197,6 +197,9 @@ async def chat(call):
     search_results = await bn.search_ddg(call.text)
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
+    web_text = await bn.extract_text_from_website(call.text)
+    if web_text is not None:
+        prompt = web_text
     yt_transcript = await bn.get_yt_transcript(prompt)
     if yt_transcript is not None:
         chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))

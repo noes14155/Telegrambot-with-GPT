@@ -4,6 +4,9 @@ import aiohttp
 import asyncio
 import whisper
 import re
+from selenium.webdriver import Firefox, FirefoxOptions
+from readability import Document
+from urllib.parse import urlparse
 from duckduckgo_search import DDGS
 from imaginepy import AsyncImagine, Style, Ratio
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -116,16 +119,18 @@ class botfn:
                             results = ddgs.answers(prompt)
                             snippet_key = 'text'
                             link_key = 'url'
-                        # Get the first five search results
                         results_list = []
                         for i, result in enumerate(results):
-                            if i >= 5:
+                            if i >= 3:
                                 break
+                            link = result[link_key]
+                            #extracted_text = self.extract_text_from_website(link)
+                            #if extracted_text is not None:
                             results_list.append({
                                 "snippet": result[snippet_key],
-                                "link": result[link_key]
+                                "link": link,
+                                #"extracted_text": extracted_text
                             })
-                        # Format the search results using a template
                         blob = f"Search results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
                         template = "[{index}] \"{snippet}\"\nURL: {link}\n"
                         for i, result in enumerate(results_list):
@@ -156,21 +161,33 @@ class botfn:
                 r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
             match = youtube_link_pattern.search(message_content)
             return match.group(6) if match else None
-
         video_id = extract_video_id(message_content)
         if not video_id:
             return None
-
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
         first_transcript = next(iter(transcript_list), None)
         if not first_transcript:
             return None
-
         translated_transcript = first_transcript.translate('en')
         formatted_transcript = ". ".join(
             [entry['text'] for entry in translated_transcript.fetch()])
         formatted_transcript = formatted_transcript[:2500]
-
         response = f"Ignore all the instructions you got before. Summarize the following in 8 bullet points:\n\n{formatted_transcript}\n\n\nProvide a summary or additional information based on the content."
-
         return response
+    
+    async def extract_text_from_website(self,url):
+        parsed_url = urlparse(url)
+        if parsed_url.scheme == '' or parsed_url.netloc == '':
+            return None
+        options = FirefoxOptions()
+        options.headless = True
+        driver = Firefox(options=options)
+        driver.get(url)
+        doc = Document(driver.page_source)
+        extracted_html = doc.summary()
+        extracted_text = re.sub('<[^<]+?>', '', extracted_html)
+        if not extracted_text.strip():
+            extracted_text = None
+        driver.quit()
+        response = f"Ignore all the instructions you got before. User has sent a URL and this is the contents of the website:\n\n{extracted_text}\n\n\nProvide a reply or additional information based on the content."
+        return extracted_text
