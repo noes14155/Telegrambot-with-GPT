@@ -9,3 +9,5 @@ duckduckgo_search
 imaginepy
 python-dotenv
 youtube_transcript_api
+selenium
+readability-lxml
