@@ -5,7 +5,7 @@ from telebot.asyncio_storage import StateMemoryStorage
 from telebot import asyncio_filters
 from dotenv import load_dotenv
 from bot import botfn,botdb,botocr
-import aiohttp
+import datetime
 import os
 import asyncio
 import random
@@ -61,6 +61,7 @@ db.create_tables()
 if os.path.exists(instruction_file):
     with open(instruction_file, 'r') as file:
         instruction = file.read()
+        instruction += "\n\nIt's currently {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
 else:
     print(f'{instruction_file} does not exist')
     instruction = ''
@@ -188,18 +189,18 @@ async def chat(call):
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     rows = db.get_history(call.from_user.id)[-9:]
     history = []
+    prompt = call.text
     for row in rows:
         role, content = row
         history.append({"role": role, "content": content})
     search_results = await bn.search_ddg(call.text)
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
-    #prompt = search_results + \
-    #    '\nSystem: These links are provided by the system.\
-    #    You may get the current information from this text.\
-    #     Answer the user, provide links only if necessary. The following is the user prompt\n' + \
-    #        call.text
-    text = await bn.generate_response(instruction,search_results,history,call.text)
+    yt_transcript = await bn.get_yt_transcript(prompt)
+    if yt_transcript is not None:
+        chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
+        prompt = yt_transcript
+    text = await bn.generate_response(instruction,search_results,history,prompt)
     db.insert_history(call.from_user.id, 'user', call.text)
     db.insert_history(call.from_user.id, 'assistant', text)
     message_task = asyncio.create_task(bot.send_message(call.chat.id,text))
@@ -225,15 +226,19 @@ async def imageaudio_handler(call):
                   + text + \
                   '\nSystem: This is a image context provided by a OCR model which is not stable. If it\'s gibberish leave it out of your answer if its readable answer accordingly'\
                   + ocr_text  
+            text += ocr_text
         elif HG_TOKEN:
             text = await bn.generate_imagecaption(image_url,HG_TOKEN)
+            ocr_text = ''
             await bot.send_message(call.chat.id,text)
             prompt = 'System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.'\
                   + text
         elif ocr_text:
+            text = ocr_text
             prompt = '\nSystem: This is a image context provided by a OCR model which is not stable. If it\'s gibberish leave it out of your answer if its readable answer accordingly'\
                   + ocr_text
         else:
+            text = ocr_text = ''
             prompt = 'System: The image to text model could not read anything from the image the user sent. '
       
     elif call.content_type == 'audio' or 'voice':
@@ -244,7 +249,10 @@ async def imageaudio_handler(call):
         os.remove(audio_file_path)
     else:
         return
-    response = await bn.generate_response(instruction,'',history,prompt)
+    search_results = await bn.search_ddg(text)
+    if not search_results:
+        search_results = 'Search feature is currently disabled so you have no realtime information'
+    response = await bn.generate_response(instruction,search_results,history,prompt)
     await bot.send_message(call.chat.id,response)
     db.insert_history(call.chat.id, 'user', text)
     db.insert_history(call.chat.id, 'assistant', response)

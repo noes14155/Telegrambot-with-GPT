@@ -1,6 +1,7 @@
 import datetime
 import random
 import aiohttp
+import asyncio
 import whisper
 import re
 from duckduckgo_search import DDGS
@@ -10,7 +11,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 class botfn:
     def __init__(self):
         self.model = whisper.load_model('tiny')
-        HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
+        self.HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
         #self.ddg_url = 'https://api.duckduckgo.com/'
 
     async def generate_response(self,instruction,search_results,history,prompt):
@@ -47,17 +48,24 @@ class botfn:
         text = 'All base URLs failed to provide a response.'
         return text
 
-    async def generate_imagecaption(self,url,HG_TOKEN):
+    async def generate_imagecaption(self, url, HG_TOKEN):
         headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                image = await resp.read()
-            async with session.post(self.HG_img2text, headers=headers, data=image) as resp:
-                if resp.status == 200:
-                    result = await resp.json()
-                    return 'This image looks like a ' + result[0]['generated_text']
-                else:
-                    return await resp.content.read()
+        max_retries = 3
+        retries = 0
+        while True:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp1, session.post(self.HG_img2text, headers=headers, data=await resp1.read()) as resp2:
+                    response = await resp2.json()
+                    if resp2.status == 200:
+                        return f"This image looks like a" + response[0]['generated_text']
+                    elif resp2.status >= 500 or 'loading' in response.get('error', '').lower():
+                        retries += 1
+                        if retries <= max_retries:
+                            await asyncio.sleep(2)
+                        else:
+                            return f"Server error: {await resp2.content.read()}"
+                    else:
+                        return f"Error: {response.get('error')}"
 
     async def generate_image(self,image_prompt, style_value, ratio_value, negative):
         imagine = AsyncImagine()
@@ -98,33 +106,34 @@ class botfn:
                         'may', 'might', 'shall', 'will', 'have', 'has', 'had', 'must', 'ought', 'need',
                         'want', 'like', 'prefer','google']
             has_wh_word = any(any(wh_word in word.lower() for wh_word in wh_words) for word in prompt.split())
-            with DDGS() as ddgs:
-                    if not has_wh_word:
-                        results = ddgs.text(keywords=prompt,region='wt-wt',safesearch='off',timelimit='m',backend='api')
-                        snippet_key = 'body'
-                        link_key = 'href'
-                    else:
-                        results = ddgs.answers(prompt)
-                        snippet_key = 'text'
-                        link_key = 'url'
-                    # Get the first five search results
-                    results_list = []
-                    for i, result in enumerate(results):
-                        if i >= 5:
-                            break
-                        results_list.append({
-                            "snippet": result[snippet_key],
-                            "link": result[link_key]
-                        })
-                    # Format the search results using a template
-                    blob = f"Search results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
-                    template = "[{index}] \"{snippet}\"\nURL: {link}\n"
-                    for i, result in enumerate(results_list):
-                        blob += template.format(index=i, snippet=result["snippet"], link=result["link"])
-                    #blob +='These links were provided by the system and not the user, so you should send the link to the user.\n\n'
-                    #print(blob)
-                    return blob
-            
+            if prompt is not None:
+                with DDGS() as ddgs:
+                        if not has_wh_word:
+                            results = ddgs.text(keywords=prompt,region='wt-wt',safesearch='off',timelimit='m',backend='api')
+                            snippet_key = 'body'
+                            link_key = 'href'
+                        else:
+                            results = ddgs.answers(prompt)
+                            snippet_key = 'text'
+                            link_key = 'url'
+                        # Get the first five search results
+                        results_list = []
+                        for i, result in enumerate(results):
+                            if i >= 5:
+                                break
+                            results_list.append({
+                                "snippet": result[snippet_key],
+                                "link": result[link_key]
+                            })
+                        # Format the search results using a template
+                        blob = f"Search results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
+                        template = "[{index}] \"{snippet}\"\nURL: {link}\n"
+                        for i, result in enumerate(results_list):
+                            blob += template.format(index=i, snippet=result["snippet"], link=result["link"])
+                        #blob +='These links were provided by the system and not the user, so you should send the link to the user.\n\n'
+                        #print(blob)
+                        return blob
+
     async def news_ddg(self,query='latest world news'):
       with DDGS() as ddgs:
         ddgs_news_gen = ddgs.news(
@@ -141,7 +150,7 @@ class botfn:
                break
         return result
 
-    async def get_yt_transcript(message_content):
+    async def get_yt_transcript(self,message_content):
         def extract_video_id(message_content):
             youtube_link_pattern = re.compile(
                 r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})')
