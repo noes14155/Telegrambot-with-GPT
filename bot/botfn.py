@@ -9,9 +9,9 @@ from imaginepy import AsyncImagine, Style, Ratio
 from youtube_transcript_api import YouTubeTranscriptApi
 
 class botfn:
-    def __init__(self):
+    def __init__(self,HG_img2text):
         self.model = whisper.load_model('tiny')
-        self.HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
+        self.HG_img2text = HG_img2text
         #self.ddg_url = 'https://api.duckduckgo.com/'
 
     async def generate_response(self,instruction,search_results,history,prompt):

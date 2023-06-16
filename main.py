@@ -13,6 +13,7 @@ import random
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 HG_TOKEN = os.getenv('HG_TOKEN')
+HG_img2text = os.getenv('HG_img2text')
 
 instruction_file = 'instructions.txt'
 messages = [
@@ -54,7 +55,7 @@ _RATIO_OPTIONS = {'1x1':'RATIO_1X1',
                   '4x3':'RATIO_4X3',
                   '3x2':'RATIO_3X2'}
 
-bn = botfn.botfn()
+bn = botfn.botfn(HG_img2text)
 db = botdb.Database('chatbot.db')
 ocr = botocr.OCR(config=" --psm 3 --oem 3 -l script/Devanagari")
 db.create_tables()
