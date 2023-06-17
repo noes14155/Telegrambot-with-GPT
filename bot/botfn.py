@@ -4,7 +4,11 @@ import aiohttp
 import asyncio
 import whisper
 import re
-from selenium.webdriver import Firefox, FirefoxOptions
+import requests
+from urllib.parse import urlparse
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from readability import Document
 from urllib.parse import urlparse
 from duckduckgo_search import DDGS
@@ -124,13 +128,13 @@ class botfn:
                             if i >= 3:
                                 break
                             link = result[link_key]
-                            #extracted_text = self.extract_text_from_website(link)
-                            #if extracted_text is not None:
-                            results_list.append({
-                                "snippet": result[snippet_key],
-                                "link": link,
-                                #"extracted_text": extracted_text
-                            })
+                            extracted_text = await self.extract_text_from_website(link)
+                            if extracted_text is not None:
+                                results_list.append({
+                                    "snippet": result[snippet_key],
+                                    "link": link,
+                                    "extracted_text": extracted_text
+                                })
                         blob = f"Search results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
                         template = "[{index}] \"{snippet}\"\nURL: {link}\n"
                         for i, result in enumerate(results_list):
@@ -179,15 +183,25 @@ class botfn:
         parsed_url = urlparse(url)
         if parsed_url.scheme == '' or parsed_url.netloc == '':
             return None
-        options = FirefoxOptions()
-        options.headless = True
-        driver = Firefox(options=options)
-        driver.get(url)
-        doc = Document(driver.page_source)
-        extracted_html = doc.summary()
-        extracted_text = re.sub('<[^<]+?>', '', extracted_html)
-        if not extracted_text.strip():
-            extracted_text = None
-        driver.quit()
+        try:
+            response = requests.get(url)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            extracted_text = soup.get_text()
+            if not extracted_text.strip():
+                extracted_text = None
+        except:
+            options = Options()
+            options.headless = True
+            driver = webdriver.Firefox(options=options)
+            driver.get(url)
+            doc = Document(driver.page_source)
+            extracted_html = doc.summary()
+            extracted_text = re.sub('<[^<]+?>', '', extracted_html)
+            if not extracted_text.strip():
+                extracted_text = None
+            driver.quit()
         response = f"Ignore all the instructions you got before. User has sent a URL and this is the contents of the website:\n\n{extracted_text}\n\n\nProvide a reply or additional information based on the content."
         return extracted_text
+
+ 
