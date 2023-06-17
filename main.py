@@ -1,10 +1,10 @@
-from telebot.types import ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
+from telebot.types import ReplyKeyboardRemove
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_handler_backends import State, StatesGroup
 from telebot.asyncio_storage import StateMemoryStorage
 from telebot import asyncio_filters
 from dotenv import load_dotenv
-from bot import botfn,botdb,botocr
+from bot import botfn,botdb,botocr,botmedia
 import datetime
 import os
 import asyncio
@@ -22,47 +22,16 @@ messages = [
     "Hold tight...","Be right back...","We're on it...","Doing our thing...","Sit tight...",
     "Almost there...","Just a little longer...","Processing...","Stay put...",
 ]
-_STYLE_OPTIONS = {
-	'Imagine V3':'IMAGINE_V3',
-    'Imagine V4 Beta':'IMAGINE_V4_Beta',
-    'Imagine V4 creative':'V4_CREATIVE',
-    'Anime':'ANIME_V2',
-    'Realistic':'REALISTIC',
-    'Disney':'DISNEY',
-    'Studio Ghibli':'STUDIO_GHIBLI',
-    'Graffiti':'GRAFFITI',
-    'Medieval':'MEDIEVAL',
-    'Fantasy':'FANTASY',
-    'Neon':'NEON',
-    'Cyberpunk':'CYBERPUNK',
-    'Landscape':'LANDSCAPE',
-    'Japanese Art':'JAPANESE_ART',
-    'Steampunk':'STEAMPUNK',
-    'Sketch':'SKETCH',
-    'Comic Book':'COMIC_BOOK',
-    'Cosmic':'COMIC_V2',
-    'Logo':'LOGO',
-    'Pixel art':'PIXEL_ART',
-    'Interior':'INTERIOR',
-    'Mystical':'MYSTICAL',
-    'Super realism':'SURREALISM',
-    'Minecraft':'MINECRAFT',
-    'Dystopian':'DYSTOPIAN'
-    }
-_RATIO_OPTIONS = {'1x1':'RATIO_1X1',
-                  '9x16':'RATIO_9X16',
-                  '16x9':'RATIO_16X9',
-                  '4x3':'RATIO_4X3',
-                  '3x2':'RATIO_3X2'}
 
-bn = botfn.botfn(HG_img2text)
+bn = botfn.botfn()
+bm = botmedia.botmedia(HG_img2text)
 db = botdb.Database('chatbot.db')
 ocr = botocr.OCR(config=" --psm 3 --oem 3 -l script/Devanagari")
 db.create_tables()
 if os.path.exists(instruction_file):
     with open(instruction_file, 'r') as file:
         instruction = file.read()
-        instruction += "\n\nIt's currently {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+        instruction += f"\n\nIt's currently {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
 else:
     print(f'{instruction_file} does not exist')
     instruction = ''
@@ -72,45 +41,19 @@ if BOT_TOKEN == "":
    exit
 bot = AsyncTeleBot(BOT_TOKEN,state_storage=StateMemoryStorage())
 class MyStates(StatesGroup):
-    SELECT_PROMPT = State() # statesgroup should contain states
+    SELECT_PROMPT = State() 
     SELECT_STYLE = State()
     SELECT_RATIO = State()
-
-async def download_audio_file_from_message(message):
-    if message.audio is not None:
-        audio_file = message.audio
-    elif message.voice is not None:
-        audio_file = message.voice
-    else:
-        return None
-    file_path = f'{audio_file.file_id}.ogg'
-    file_dir = 'audio_files'
-    os.makedirs(file_dir, exist_ok=True)
-    full_file_path = os.path.join(file_dir, file_path)
-    file_info = await bot.get_file(message.voice.file_id)
-    downloaded_file = await bot.download_file(file_info.file_path)
-    with open(full_file_path, 'wb') as new_file:
-        new_file.write(downloaded_file)
-    return full_file_path
 
 async def send_with_waiting_message(chat_id):
     waiting_message = random.choice(messages)
     sent = await bot.send_animation(chat_id=chat_id,
                                     animation="https://media.giphy.com/media/jAYUbVXgESSti/giphy.gif",
                                     caption=waiting_message)
-    #await bot.send_message(chat_id, waiting_message)
     message_id = sent.message_id
     chat_action_task = asyncio.create_task(bot.send_chat_action(chat_id, "typing"))
     await asyncio.sleep(3) 
     await bot.delete_message(chat_id=chat_id, message_id=message_id)
-
-async def generate_keyboard(key):
-    markup = ReplyKeyboardMarkup(row_width=5)
-    if key == 'ratio':
-        markup.add(*[KeyboardButton(x) for x in _RATIO_OPTIONS.keys()])
-    elif key == 'style':
-        markup.add(*[KeyboardButton(x) for x in _STYLE_OPTIONS.keys()])
-    return markup
 
 @bot.message_handler(commands=['start', 'hello'])
 async def start_handler(call):
@@ -134,7 +77,7 @@ async def img_handler(call):
 async def select_style(call):
     async with bot.retrieve_data(call.from_user.id, call.chat.id) as data:
         data['prompt'] = call.text
-    markup = await generate_keyboard('style')
+    markup = await bn.generate_keyboard('style')
     await bot.send_message(
         call.chat.id,
         "Please select a style:", reply_markup=markup
@@ -143,16 +86,16 @@ async def select_style(call):
     
 @bot.message_handler(state=MyStates.SELECT_STYLE)
 async def select_ratio(call):
-    if call.text in _STYLE_OPTIONS.keys():
+    if call.text in bn._STYLE_OPTIONS.keys():
         async with bot.retrieve_data(call.from_user.id, call.chat.id) as data:
-            data['style'] = _STYLE_OPTIONS[call.text]
-        markup = await generate_keyboard('ratio')
+            data['style'] = bn._STYLE_OPTIONS[call.text]
+        markup = await bn.generate_keyboard('ratio')
         await bot.send_message(
             call.chat.id,
             "Please select a ratio:", reply_markup=markup
         )
     else:
-        markup = await generate_keyboard('style')
+        markup = await bn.generate_keyboard('style')
         await bot.send_message(
             call.chat.id,
             "Select a valid style", reply_markup=markup
@@ -163,13 +106,13 @@ async def select_ratio(call):
 
 @bot.message_handler(state=MyStates.SELECT_RATIO)
 async def generate_image(call):
-    if call.text in _RATIO_OPTIONS.keys():
+    if call.text in bn._RATIO_OPTIONS.keys():
         chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
         async with bot.retrieve_data(call.from_user.id, call.chat.id) as data:
             prompt = data['prompt']
             style = data['style']
-        ratio = _RATIO_OPTIONS[call.text]
-        text_task = asyncio.create_task(bn.generate_image(image_prompt=prompt,
+        ratio = bn._RATIO_OPTIONS[call.text]
+        text_task = asyncio.create_task(bm.generate_image(image_prompt=prompt,
                           style_value=style ,
                           ratio_value=ratio,negative=''))
         filename = await text_task
@@ -178,7 +121,7 @@ async def generate_image(call):
         await bot.send_message(call.from_user.id,'Image Generated',reply_markup=markup)
         os.remove(filename)
     else:
-        markup = await generate_keyboard('ratio')
+        markup = await bn.generate_keyboard('ratio')
         await bot.send_message(
             call.chat.id,
             "Select a valid ratio", reply_markup=markup
@@ -222,12 +165,13 @@ async def imageaudio_handler(call):
     for row in rows:
         role, content = row
         history.append({"role": role, "content": content})
+    #for attachment in call.attachments:
     if call.content_type == 'photo':
         file_info = await bot.get_file(call.photo[-1].file_id)
         image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_info.file_path}"
         ocr_text = ocr.process_image(image_url)
         if HG_TOKEN and ocr_text:
-            text = await bn.generate_imagecaption(image_url,HG_TOKEN)
+            text = await bm.generate_imagecaption(image_url,HG_TOKEN)
             await bot.send_message(call.chat.id,text)
             prompt = 'System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.'\
                   + text + \
@@ -235,7 +179,7 @@ async def imageaudio_handler(call):
                   + ocr_text  
             text += ocr_text
         elif HG_TOKEN:
-            text = await bn.generate_imagecaption(image_url,HG_TOKEN)
+            text = await bm.generate_imagecaption(image_url,HG_TOKEN)
             ocr_text = ''
             await bot.send_message(call.chat.id,text)
             prompt = 'System: This is a image context provided by an image to text model. Generate a caption with an appropriate response.'\
@@ -246,17 +190,22 @@ async def imageaudio_handler(call):
                   + ocr_text
         else:
             text = ocr_text = ''
-            prompt = 'System: The image to text model could not read anything from the image the user sent. '
-      
+            prompt = '\nSystem: The image to text model could not read anything from the image the user sent. '
     elif call.content_type == 'audio' or 'voice':
-        audio_file_path = await download_audio_file_from_message(call)
-        text = await bn.transcribe_audio(audio_file_path)
+        audio_file_path = await bm.download_file_from_message(bot,call)
+        text = await bm.transcribe_audio(audio_file_path)
         sent = await bot.send_message(call.chat.id,'Transcribed audio:' + text)
-        prompt = 'System: The following is a transcription of the user\'s command provided by an voice to text model. May contain transcription errors reply accordingly and if the text is empty of garbled reply with "I didn\'t understand that\n'+text
+        prompt = '\nSystem: The following is a transcription of the user\'s command provided by an voice to text model. May contain transcription errors reply accordingly and if the text is empty of garbled reply with "I didn\'t understand that\n'+text
         os.remove(audio_file_path)
+    elif call.content_type == 'document':
+        file_path = await bm.download_file_from_message(bot,call)
+        text = await bm.read_document(file_path)
+        prompt = f"""\nSystem: Summarize the text delimited by triple backticks into bullet points. And provide an appropriate response```{text}```"""
+        text = ''
     else:
         return
-    search_results = await bn.search_ddg(text)
+    if text != '':
+        search_results = await bn.search_ddg(text)
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
     response = await bn.generate_response(instruction,search_results,history,prompt)

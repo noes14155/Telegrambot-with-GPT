@@ -1,10 +1,9 @@
 import datetime
 import random
 import aiohttp
-import asyncio
-import whisper
 import re
 import requests
+from telebot.types import  ReplyKeyboardMarkup, KeyboardButton
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -12,13 +11,43 @@ from selenium.webdriver.firefox.options import Options
 from readability import Document
 from urllib.parse import urlparse
 from duckduckgo_search import DDGS
-from imaginepy import AsyncImagine, Style, Ratio
 from youtube_transcript_api import YouTubeTranscriptApi
 
 class botfn:
-    def __init__(self,HG_img2text):
-        self.model = whisper.load_model('tiny')
-        self.HG_img2text = HG_img2text
+    def __init__(self):
+        self._STYLE_OPTIONS = {
+	                        'Imagine V3':'IMAGINE_V3',
+                            'Imagine V4 Beta':'IMAGINE_V4_Beta',
+                            'Imagine V4 creative':'V4_CREATIVE',
+                            'Anime':'ANIME_V2',
+                            'Realistic':'REALISTIC',
+                            'Disney':'DISNEY',
+                            'Studio Ghibli':'STUDIO_GHIBLI',
+                            'Graffiti':'GRAFFITI',
+                            'Medieval':'MEDIEVAL',
+                            'Fantasy':'FANTASY',
+                            'Neon':'NEON',
+                            'Cyberpunk':'CYBERPUNK',
+                            'Landscape':'LANDSCAPE',
+                            'Japanese Art':'JAPANESE_ART',
+                            'Steampunk':'STEAMPUNK',
+                            'Sketch':'SKETCH',
+                            'Comic Book':'COMIC_BOOK',
+                            'Cosmic':'COMIC_V2',
+                            'Logo':'LOGO',
+                            'Pixel art':'PIXEL_ART',
+                            'Interior':'INTERIOR',
+                            'Mystical':'MYSTICAL',
+                            'Super realism':'SURREALISM',
+                            'Minecraft':'MINECRAFT',
+                            'Dystopian':'DYSTOPIAN'
+                            }
+        self._RATIO_OPTIONS = {'1x1':'RATIO_1X1',
+                        '9x16':'RATIO_9X16',
+                        '16x9':'RATIO_16X9',
+                        '4x3':'RATIO_4X3',
+                        '3x2':'RATIO_3X2'}
+
         #self.ddg_url = 'https://api.duckduckgo.com/'
 
     async def generate_response(self,instruction,search_results,history,prompt):
@@ -29,8 +58,9 @@ class botfn:
             'model': 'gpt-3.5-turbo-16k-0613',
             'temperature': 0.75,
             'messages': [
-                {"role": "system", "content": search_results},
+                {"role": "system", "content": instruction},
                 {"role": "user", "content": instruction},
+                {"role": "system", "content": search_results},
                 *history,
                 {"role": "user", "content": prompt},
                 #{"role": "system", "content": image_caption},
@@ -54,57 +84,6 @@ class botfn:
                         break
         text = 'All base URLs failed to provide a response.'
         return text
-
-    async def generate_imagecaption(self, url, HG_TOKEN):
-        headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-        max_retries = 3
-        retries = 0
-        while True:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp1, session.post(self.HG_img2text, headers=headers, data=await resp1.read()) as resp2:
-                    response = await resp2.json()
-                    if resp2.status == 200:
-                        return f"This image looks like a" + response[0]['generated_text']
-                    elif resp2.status >= 500 or 'loading' in response.get('error', '').lower():
-                        retries += 1
-                        if retries <= max_retries:
-                            await asyncio.sleep(2)
-                        else:
-                            return f"Server error: {await resp2.content.read()}"
-                    else:
-                        return f"Error: {response.get('error')}"
-
-    async def generate_image(self,image_prompt, style_value, ratio_value, negative):
-        imagine = AsyncImagine()
-        filename = "image.png"
-        style_enum = Style[style_value]
-        ratio_enum = Ratio[ratio_value]
-        img_data = await imagine.sdprem(
-            prompt=image_prompt,
-            style=style_enum,
-            ratio=ratio_enum,
-            priority="1",
-            high_res_results="1",
-            steps="70",
-            negative=negative
-        )
-        try:
-            with open(filename, mode="wb") as img_file:
-                img_file.write(img_data)
-        except Exception as e:
-            print(f"An error occurred while writing the image to file: {e}")
-            return None
-        await imagine.close()
-        return filename
-    
-    async def transcribe_audio(self, audio_file_path):
-        with open(audio_file_path, 'rb') as audio_file:
-            content = audio_file.read()
-
-        result = self.model.transcribe(audio_file_path)
-        transcription = result["text"]
-        return transcription
-
 
     async def search_ddg(self, prompt):
         with DDGS() as ddgs:
@@ -204,4 +183,11 @@ class botfn:
         response = f"Ignore all the instructions you got before. User has sent a URL and this is the contents of the website:\n\n{extracted_text}\n\n\nProvide a reply or additional information based on the content."
         return extracted_text
 
- 
+    async def generate_keyboard(self,key):
+        markup = ReplyKeyboardMarkup(row_width=5)
+        if key == 'ratio':
+            markup.add(*[KeyboardButton(x) for x in self._RATIO_OPTIONS.keys()])
+        elif key == 'style':
+            markup.add(*[KeyboardButton(x) for x in self._STYLE_OPTIONS.keys()])
+        return markup
+    

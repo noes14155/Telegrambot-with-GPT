@@ -12,3 +12,4 @@ youtube_transcript_api
 selenium
 readability-lxml
 bs4
+pypdf
