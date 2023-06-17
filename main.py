@@ -95,7 +95,10 @@ async def download_audio_file_from_message(message):
 
 async def send_with_waiting_message(chat_id):
     waiting_message = random.choice(messages)
-    sent = await bot.send_message(chat_id, waiting_message)
+    sent = await bot.send_animation(chat_id=chat_id,
+                                    animation="https://media.giphy.com/media/jAYUbVXgESSti/giphy.gif",
+                                    caption=waiting_message)
+    #await bot.send_message(chat_id, waiting_message)
     message_id = sent.message_id
     chat_action_task = asyncio.create_task(bot.send_chat_action(chat_id, "typing"))
     await asyncio.sleep(3) 
