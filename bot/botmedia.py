@@ -82,18 +82,20 @@ class botmedia:
         return full_file_path
     
     async def read_document(self,filename):
-        valid_extensions = ['.txt', '.rtf', '.md', '.html', '.xml', '.csv', '.json', '.js', '.css', '.py', '.java', '.c', '.cpp', '.php', '.rb', '.swift', '.sql', '.sh', '.bat', '.ps1', '.ini', '.cfg', '.conf', '.log', '.svg', '.epub', '.mobi', '.tex', '.docx', '.odt', '.xlsx', '.ods', '.pptx', '.odp', '.eml', '.htaccess', '.nginx.conf', '.pdf']
+        valid_extensions = ['txt', 'rtf', 'md', 'html', 'xml', 'csv', 'json', 'js', 'css', 'py', 'java', 'c', 'cpp', 'php', 'rb', 'swift', 'sql', 'sh', 'bat', 'ps1', 'ini', 'cfg', 'conf', 'log', 'svg', 'epub', 'mobi', 'tex', 'docx', 'odt', 'xlsx', 'ods', 'pptx', 'odp', 'eml', 'htaccess', 'nginx.conf', 'pdf']
         extension = filename.split('.')[-1]
         if extension not in valid_extensions:
             return 'Invalid document file'
         if extension == 'pdf':
             with open(filename, 'rb') as f:
                 pdf_reader = pypdf.PdfReader(f)
+                num_pages = len(pdf_reader.pages)
                 contents = ''
-                for page_num in range(pdf_reader.getNumPages()):
-                    page = pdf_reader.getPage(page_num)
-                    contents += page.extractText()
-                return contents
+                for page_num in range(num_pages):
+                    page_obj = pdf_reader.pages[page_num]
+                    page_text = page_obj.extract_text()
+                    contents += page_text
+            return contents
         else:
             with open(filename, 'r') as f:
                 contents = f.read()

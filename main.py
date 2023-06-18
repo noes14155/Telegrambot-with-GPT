@@ -156,7 +156,7 @@ async def chat(call):
     message_task = asyncio.create_task(bot.send_message(call.chat.id,text))
     message = await message_task
 
-@bot.message_handler(content_types=['voice', 'audio', 'photo'])
+@bot.message_handler(content_types=['voice', 'audio', 'photo', 'document'])
 async def imageaudio_handler(call): 
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     global instruction
@@ -191,20 +191,21 @@ async def imageaudio_handler(call):
         else:
             text = ocr_text = ''
             prompt = '\nSystem: The image to text model could not read anything from the image the user sent. '
+    elif call.content_type == 'document':
+        file_path = await bm.download_file_from_message(bot,call)
+        text = await bm.read_document(file_path)
+        prompt = f"\nSystem: Summarize the following text into bullet points. And provide an appropriate response. If there is no text present respond with i couldn't read that.\n{text}"
+        search_results = ''
+        os.remove(file_path)
     elif call.content_type == 'audio' or 'voice':
         audio_file_path = await bm.download_file_from_message(bot,call)
         text = await bm.transcribe_audio(audio_file_path)
         sent = await bot.send_message(call.chat.id,'Transcribed audio:' + text)
         prompt = '\nSystem: The following is a transcription of the user\'s command provided by an voice to text model. May contain transcription errors reply accordingly and if the text is empty of garbled reply with "I didn\'t understand that\n'+text
         os.remove(audio_file_path)
-    elif call.content_type == 'document':
-        file_path = await bm.download_file_from_message(bot,call)
-        text = await bm.read_document(file_path)
-        prompt = f"""\nSystem: Summarize the text delimited by triple backticks into bullet points. And provide an appropriate response```{text}```"""
-        text = ''
     else:
         return
-    if text != '':
+    if text != '' and call.content_type != 'document':
         search_results = await bn.search_ddg(text)
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
