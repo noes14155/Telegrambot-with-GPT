@@ -104,7 +104,7 @@ class botfn:
                     template = "[{index}] \"{snippet}\"\nURL: {link}\n"
                     for i, result in enumerate(results_list):
                         blob += template.format(index=i, snippet=result["snippet"], link=result["link"])
-                    blob +='\nThese links were provided by the system and not the user refer to them before answering the user\'s query and provide links if necessary.\n\n'
+                    blob +='\nPlease refer to the provided links before answering the user\'s query. These links are from an internet search related to the user\'s query.\n\n'
                     #print(blob)
                     
             else:
@@ -143,7 +143,7 @@ class botfn:
         formatted_transcript = ". ".join(
             [entry['text'] for entry in translated_transcript.fetch()])
         formatted_transcript = formatted_transcript[:2500]
-        response = f"Ignore all the instructions you got before. Provide a summary or additional information for the following youtube video transcript in a few short concise bullet points:\n\n{formatted_transcript}"
+        response = f"Please provide a summary or additional information for the following YouTube video transcript in a few concise bullet points.\n\n{formatted_transcript}"
         return response
     
     async def extract_text_from_website(self,url):
@@ -168,8 +168,8 @@ class botfn:
             if not extracted_text.strip():
                 extracted_text = None
             driver.quit()
-        response = f"Ignore all the instructions you got before. User has sent a URL and this is the contents of the website:\n\n{extracted_text}\n\n\nProvide a reply or additional information based on the content."
-        return extracted_text
+        response = f"The user has sent a URL.The following is the website contents. Please provide a reply or additional information."
+        return response
 
     async def generate_keyboard(self,key):
         markup = ReplyKeyboardMarkup(row_width=5)
