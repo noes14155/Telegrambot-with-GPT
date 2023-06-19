@@ -2,6 +2,7 @@ from telebot.types import ReplyKeyboardRemove
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_handler_backends import State, StatesGroup
 from telebot.asyncio_storage import StateMemoryStorage
+import telebot
 from telebot import asyncio_filters
 from dotenv import load_dotenv
 from bot import botfn,botdb,botocr,botmedia
@@ -9,6 +10,7 @@ import datetime
 import os
 import asyncio
 import random
+import logging
 
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -40,7 +42,10 @@ else:
 if BOT_TOKEN == "":
    print('No BOT-TOKEN found! Add it in your env file')
    exit
+logger = telebot.logger
+telebot.logger.setLevel(logging.INFO)
 bot = AsyncTeleBot(BOT_TOKEN,state_storage=StateMemoryStorage())
+
 class MyStates(StatesGroup):
     SELECT_PROMPT = State() 
     SELECT_STYLE = State()
@@ -131,7 +136,7 @@ async def generate_image(call):
         return
     await bot.delete_state(call.from_user.id, call.chat.id)
 
-@bot.message_handler(content_types='text')
+@bot.message_handler(content_types=['text'])
 async def chat(call):
     global instruction
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
@@ -217,5 +222,9 @@ async def imageaudio_handler(call):
     db.insert_history(call.chat.id, 'assistant', response)
 
 bot.add_custom_filter(asyncio_filters.StateFilter(bot))
-asyncio.run(bot.polling())
+try:
+    asyncio.run(bot.polling(non_stop=True))
+except Exception as e:
+    logging.error('Error connecting to Telegram API: %s', e.args)
+    exit()
 db.close_connection()
