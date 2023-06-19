@@ -32,6 +32,7 @@ if os.path.exists(instruction_file):
     with open(instruction_file, 'r') as file:
         instruction = file.read()
         instruction += f"\n\nIt's currently {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+        #\n Next system message will be search results from the internet for the user's query. so refer to them before answering"
 else:
     print(f'{instruction_file} does not exist')
     instruction = ''
@@ -146,9 +147,9 @@ async def chat(call):
     web_text = await bn.extract_text_from_website(call.text)
     if web_text is not None:
         prompt = web_text
-    yt_transcript = await bn.get_yt_transcript(prompt)
+    yt_transcript = await bn.get_yt_transcript(call.text)
     if yt_transcript is not None:
-        chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
+        #chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
         prompt = yt_transcript
     text = await bn.generate_response(instruction,search_results,history,prompt)
     db.insert_history(call.from_user.id, 'user', call.text)
@@ -191,17 +192,18 @@ async def imageaudio_handler(call):
         else:
             text = ocr_text = ''
             prompt = '\nSystem: The image to text model could not read anything from the image the user sent. '
+        prompt += '\nDespite not being able to view the image directly, You will always provide a response based on the image context."'
     elif call.content_type == 'document':
         file_path = await bm.download_file_from_message(bot,call)
         text = await bm.read_document(file_path)
-        prompt = f"\nSystem: Summarize the following text into bullet points. And provide an appropriate response. If there is no text present respond with i couldn't read that.\n{text}"
+        prompt = f"\nSystem: The user has sent the following file content for creating a response based on it. If there is no text present respond with i couldn't read that.\n{text}"
         search_results = ''
         os.remove(file_path)
     elif call.content_type == 'audio' or 'voice':
         audio_file_path = await bm.download_file_from_message(bot,call)
         text = await bm.transcribe_audio(audio_file_path)
         sent = await bot.send_message(call.chat.id,'Transcribed audio:' + text)
-        prompt = '\nSystem: The following is a transcription of the user\'s command provided by an voice to text model. May contain transcription errors reply accordingly and if the text is empty of garbled reply with "I didn\'t understand that\n'+text
+        prompt = '\nSystem: The following is a transcription of the user\'s command provided by a voice to text model. May contain transcription errors reply accordingly and if the text is empty of garbled reply with "I didn\'t understand that\n'+text
         os.remove(audio_file_path)
     else:
         return

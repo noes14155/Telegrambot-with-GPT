@@ -58,12 +58,10 @@ class botfn:
             'model': 'gpt-3.5-turbo-16k-0613',
             'temperature': 0.75,
             'messages': [
-                {"role": "system", "content": instruction},
-                {"role": "user", "content": instruction},
                 {"role": "system", "content": search_results},
+                {"role": "system", "content": instruction},
                 *history,
                 {"role": "user", "content": prompt},
-                #{"role": "system", "content": image_caption},
             ]
         }
         random.shuffle(base_urls)
@@ -87,41 +85,31 @@ class botfn:
 
     async def search_ddg(self, prompt):
         with DDGS() as ddgs:
-            wh_words = ['search', 'find', 'who', 'what', 'when', 'where', 'why', 'which', 'whom', 'whose', 'how',
-                        'is', 'are', 'am', 'can', 'could', 'should', 'would', 'do', 'does', 'did',
-                        'may', 'might', 'shall', 'will', 'have', 'has', 'had', 'must', 'ought', 'need',
-                        'want', 'like', 'prefer','google']
-            has_wh_word = any(any(wh_word in word.lower() for wh_word in wh_words) for word in prompt.split())
+            if re.search(r'(https?://\S+)', prompt) or len(prompt) > 1000:
+                return
             if prompt is not None:
-                with DDGS() as ddgs:
-                        if not has_wh_word:
-                            results = ddgs.text(keywords=prompt,region='wt-wt',safesearch='off',timelimit='m',backend='api')
-                            snippet_key = 'body'
-                            link_key = 'href'
-                        else:
-                            results = ddgs.answers(prompt)
-                            snippet_key = 'text'
-                            link_key = 'url'
-                        results_list = []
-                        for i, result in enumerate(results):
-                            if i >= 3:
-                                break
-                            link = result[link_key]
-                            extracted_text = await self.extract_text_from_website(link)
-                            if extracted_text is not None:
-                                results_list.append({
-                                    "snippet": result[snippet_key],
-                                    "link": link,
-                                    "extracted_text": extracted_text
-                                })
-                        blob = f"Search results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
-                        template = "[{index}] \"{snippet}\"\nURL: {link}\n"
-                        for i, result in enumerate(results_list):
-                            blob += template.format(index=i, snippet=result["snippet"], link=result["link"])
-                        #blob +='These links were provided by the system and not the user, so you should send the link to the user.\n\n'
-                        #print(blob)
-                        return blob
-
+                    results = ddgs.text(keywords=prompt,region='wt-wt',safesearch='off',backend='api')
+                    results_list = []
+                    for i, result in enumerate(results):
+                        if i >= 3:
+                            break
+                        #extracted_text = await self.extract_text_from_website(result.get('href'))
+                        #if extracted_text is not None:
+                        results_list.append({
+                            "snippet": result.get('body'),
+                            "link": result.get('href'),
+                            #"extracted_text": extracted_text
+                        })
+                    blob = f"Search results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
+                    template = "[{index}] \"{snippet}\"\nURL: {link}\n"
+                    for i, result in enumerate(results_list):
+                        blob += template.format(index=i, snippet=result["snippet"], link=result["link"])
+                    blob +='\nThese links were provided by the system and not the user refer to them before answering the user\'s query and provide links if necessary.\n\n'
+                    #print(blob)
+                    
+            else:
+                blob = "No search query is needed for a response"
+            return blob
     async def news_ddg(self,query='latest world news'):
       with DDGS() as ddgs:
         ddgs_news_gen = ddgs.news(
@@ -155,7 +143,7 @@ class botfn:
         formatted_transcript = ". ".join(
             [entry['text'] for entry in translated_transcript.fetch()])
         formatted_transcript = formatted_transcript[:2500]
-        response = f"Ignore all the instructions you got before. Summarize the following in 8 bullet points:\n\n{formatted_transcript}\n\n\nProvide a summary or additional information based on the content."
+        response = f"Ignore all the instructions you got before. Provide a summary or additional information for the following youtube video transcript in a few short concise bullet points:\n\n{formatted_transcript}"
         return response
     
     async def extract_text_from_website(self,url):

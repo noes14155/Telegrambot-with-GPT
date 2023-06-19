@@ -3,6 +3,12 @@ import asyncio
 import os
 import whisper
 import pypdf
+import csv
+import docx
+import openpyxl
+import pptx
+import email
+from bs4 import BeautifulSoup
 from imaginepy import AsyncImagine, Style, Ratio
 
 class botmedia:
@@ -96,6 +102,46 @@ class botmedia:
                     page_text = page_obj.extract_text()
                     contents += page_text
             return contents
+        elif extension == 'docx':
+            doc = docx.Document(filename)
+            contents = '\n'.join([paragraph.text for paragraph in doc.paragraphs])
+            return contents
+        elif extension in ['xlsx', 'ods']:
+            workbook = openpyxl.load_workbook(filename, read_only=True)
+            sheet = workbook.active
+            contents = ''
+            for row in sheet.iter_rows(values_only=True):
+                contents += '\t'.join([str(cell_value) for cell_value in row]) + '\n'
+            return contents
+        elif extension in ['pptx', 'odp']:
+            presentation = pptx.Presentation(filename)
+            contents = ''
+            for slide in presentation.slides:
+                for shape in slide.shapes:
+                    if hasattr(shape, 'text'):
+                        contents += shape.text + '\n'
+            return contents
+        elif extension == 'eml':
+            with open(filename, 'r') as f:
+                msg = email.message_from_file(f)
+                contents = ''
+                for part in msg.walk():
+                    if part.get_content_type() == 'text/plain':
+                        contents += part.get_payload()
+            return contents
+        elif extension in ['html', 'xml']:
+            with open(filename, 'r') as f:
+                soup = BeautifulSoup(f, 'html.parser')
+                contents = soup.get_text()
+            return contents
+        elif extension == 'csv':
+            with open(filename, 'r') as f:
+                reader = csv.reader(f)
+                contents = ''
+                for row in reader:
+                    contents += '\t'.join(row) + '\n'
+            return contents
+
         else:
             with open(filename, 'r') as f:
                 contents = f.read()

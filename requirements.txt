@@ -13,3 +13,6 @@ selenium
 readability-lxml
 bs4
 pypdf
+python-docx
+openpyxl
+python-pptx
