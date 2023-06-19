@@ -1,6 +1,5 @@
 # Telegrambot-with-GPT4free
-Simple telegram bot with chatgpt 
-Update: removed GPT4free using links provided by [mishalhossin](https://github.com/mishalhossin/Discord-AI-Chatbot)
+Simple telegram bot with chatgpt       
 Hugging face token is only required for image captioning.    
 Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
 If you want to use any other model change HG_img2text value. Change it in the environment variables.
@@ -38,7 +37,7 @@ docker-compose up --build -d
 
 ## Environment Variables
 
-To run this project, you will need to create a .env file and add the following environment variables   
+To run this project, you will need to create a .env file or rename the existing example.env to .env and add the following environment variables   
 
 `BOT_TOKEN`
 Get this by messaging @botfather Refer to https://core.telegram.org/bots/tutorial#obtain-your-bot-token

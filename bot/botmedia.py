@@ -68,10 +68,10 @@ class botmedia:
     async def download_file_from_message(self,bot,message):
         if message.audio is not None:
             file = message.audio
-            file_extension = file.file_name.split(".")[-1] if file.file_name is not None else '.ogg'
+            file_extension = file.file_name.split(".")[-1] if file.file_name is not None else 'ogg'
         elif message.voice is not None:
             file = message.voice
-            file_extension = file.file_name.split(".")[-1] if file.file_name is not None else '.ogg'
+            file_extension = file.file_name.split(".")[-1] if file.file_name is not None else 'ogg'
         elif message.document is not None:
             file = message.document
             file_extension = file.file_name.split(".")[-1] if file.file_name is not None else ''
