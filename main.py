@@ -8,6 +8,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from dotenv import load_dotenv
 from bot import botfn,botdb,botocr,botmedia
 import yaml
+import yaml
 import datetime
 import os
 import asyncio
@@ -25,6 +26,13 @@ if os.path.exists('lang.yml'):
 else:
     print('lang.yml does not exist.')
     exit
+language = os.getenv('LANG')
+if os.path.exists('lang.yml'):
+    with open("lang.yml", 'r', encoding='utf8') as f:
+        lang = yaml.safe_load(f)
+else:
+    print('lang.yml does not exist.')
+    exit
 instruction_file = 'instructions.txt'
 messages = [
     "Please wait...","Hang on a sec...","Just a moment...","Processing your request...",
@@ -32,6 +40,8 @@ messages = [
     "Hold tight...","Be right back...","We're on it...","Doing our thing...","Sit tight...",
     "Almost there...","Just a little longer...","Processing...","Stay put...",
 ]
+logging.basicConfig(level=logging.INFO)
+bn = botfn.botfn(lang)
 logging.basicConfig(level=logging.INFO)
 bn = botfn.botfn(lang)
 bm = botmedia.botmedia(HG_img2text)
@@ -53,15 +63,22 @@ storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot,storage=storage)
 #bot = AsyncTeleBot(BOT_TOKEN,state_storage=StateMemoryStorage())
+storage = MemoryStorage()
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(bot,storage=storage)
+#bot = AsyncTeleBot(BOT_TOKEN,state_storage=StateMemoryStorage())
 
 class MyStates(StatesGroup):
     SELECT_PROMPT = State() 
     SELECT_STYLE = State()
     SELECT_RATIO = State()
     SELECT_LANG = State()
+    SELECT_LANG = State()
 
 async def send_with_waiting_message(chat_id):
     waiting_message = random.choice(messages)
+    sent = await bot.send_message(chat_id=chat_id,
+                                    text="⏳ "+waiting_message)
     sent = await bot.send_message(chat_id=chat_id,
                                     text="⏳ "+waiting_message)
     message_id = sent.message_id
@@ -133,16 +150,23 @@ async def img_handler(call: types.Message):
 @dp.message_handler(state=MyStates.SELECT_PROMPT)
 async def select_style(call: types.Message, state: FSMContext):
     async with state.proxy() as data:
+@dp.message_handler(state=MyStates.SELECT_PROMPT)
+async def select_style(call: types.Message, state: FSMContext):
+    async with state.proxy() as data:
         data['prompt'] = call.text
     markup = await bn.generate_keyboard('style')
     await bot.send_message(call.chat.id,
         "Please select a style:", reply_markup=markup
     )
     await MyStates.next()
+    await MyStates.next()
     
 @dp.message_handler(state=MyStates.SELECT_STYLE)
 async def select_ratio(call: types.Message, state: FSMContext):
+@dp.message_handler(state=MyStates.SELECT_STYLE)
+async def select_ratio(call: types.Message, state: FSMContext):
     if call.text in bn._STYLE_OPTIONS.keys():
+        async with state.proxy() as data:
         async with state.proxy() as data:
             data['style'] = bn._STYLE_OPTIONS[call.text]
         markup = await bn.generate_keyboard('ratio')
@@ -155,13 +179,18 @@ async def select_ratio(call: types.Message, state: FSMContext):
             "Select a valid style", reply_markup=markup
         )
         await MyStates.SELECT_STYLE.set()
+        await MyStates.SELECT_STYLE.set()
         return
+    await MyStates.SELECT_RATIO.set()
     await MyStates.SELECT_RATIO.set()
 
 @dp.message_handler(state=MyStates.SELECT_RATIO)
 async def generate_image(call: types.Message, state: FSMContext):
+@dp.message_handler(state=MyStates.SELECT_RATIO)
+async def generate_image(call: types.Message, state: FSMContext):
     if call.text in bn._RATIO_OPTIONS.keys():
         chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
+        async with state.get_data() as data:
         async with state.get_data() as data:
             prompt = data['prompt']
             style = data['style']
@@ -170,6 +199,7 @@ async def generate_image(call: types.Message, state: FSMContext):
                           style_value=style ,
                           ratio_value=ratio,negative=''))
         filename = await text_task
+        await call.reply_photo(photo=open(filename,'rb')) 
         await call.reply_photo(photo=open(filename,'rb')) 
         markup = ReplyKeyboardRemove()  
         await bot.send_message(call.chat.id,'Image Generated',reply_markup=markup)
@@ -180,12 +210,17 @@ async def generate_image(call: types.Message, state: FSMContext):
             "Select a valid ratio", reply_markup=markup
         )
         await MyStates.SELECT_RATIO.set()
+        await MyStates.SELECT_RATIO.set()
         return
+    await state.finish()
     await state.finish()
 
 @dp.message_handler(content_types=['text'])
 async def chat(call:types.Message):
+@dp.message_handler(content_types=['text'])
+async def chat(call:types.Message):
     global instruction
+    language = lang['languages'][db.get_settings(call.from_user.id)]
     language = lang['languages'][db.get_settings(call.from_user.id)]
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     rows = db.get_history(call.from_user.id)[-9:]
@@ -194,6 +229,7 @@ async def chat(call:types.Message):
     for row in rows:
         role, content = row
         history.append({"role": role, "content": content})
+    instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
     instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
     search_results = await bn.search_ddg(call.text)
     if not search_results:
@@ -212,8 +248,12 @@ async def chat(call:types.Message):
 
 @dp.message_handler(content_types=['voice', 'audio', 'photo', 'document'])
 async def imageaudio_handler(call: types.Message): 
+@dp.message_handler(content_types=['voice', 'audio', 'photo', 'document'])
+async def imageaudio_handler(call: types.Message): 
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     global instruction
+    language = lang['languages'][db.get_settings(call.from_user.id)]
+    instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
     language = lang['languages'][db.get_settings(call.from_user.id)]
     instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
     rows = db.get_history(call.from_user.id)[-10:]
@@ -228,7 +268,7 @@ async def imageaudio_handler(call: types.Message):
         ocr_text = ocr.process_image(image_url)
         if HG_TOKEN and ocr_text:
             text = await bm.generate_imagecaption(image_url,HG_TOKEN)
-            await bot.send_message(call.chat.id,text)
+            await call.reply(text)
             prompt = 'System: The following is a image context provided by an image to text model.\
                  Generate a caption for the image context provided by an image-to-text model and respond appropriately.\n'\
                   + text + \
@@ -239,7 +279,7 @@ async def imageaudio_handler(call: types.Message):
         elif HG_TOKEN:
             text = await bm.generate_imagecaption(image_url,HG_TOKEN)
             ocr_text = ''
-            await bot.send_message(call.chat.id,text)
+            await call.reply(text)
             prompt = 'System: The following is a image context provided by an image to text model.\
                  Generate a caption for the image context provided by an image-to-text model and respond appropriately.\n'\
                   + text
@@ -261,7 +301,7 @@ async def imageaudio_handler(call: types.Message):
     elif call.content_type == 'audio' or 'voice':
         audio_file_path = await bm.download_file(call)
         text = await bm.transcribe_audio(audio_file_path)
-        sent = await bot.send_message(call.chat.id,'Transcribed audio:' + text)
+        sent = await call.reply('Transcribed audio:' + text)
         prompt = '\nSystem: The following is a transcription of the user\'s command generated by a voice-to-text model. Review it and generate appropriate response. If there are any transcription errors, please provide the appropriate response. If the text is empty or garbled, reply with "I didn\'t understand that."\n'+text
         os.remove(audio_file_path)
     else:
@@ -271,10 +311,16 @@ async def imageaudio_handler(call: types.Message):
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
     response = await bn.generate_response(instruction,search_results,history,prompt)
-    await bot.send_message(call.chat.id,response)
+    await call.reply(response)
     db.insert_history(call.chat.id, 'user', text)
     db.insert_history(call.chat.id, 'assistant', response)
 
+async def main():
+    await dp.start_polling()
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
 async def main():
     await dp.start_polling()
 
