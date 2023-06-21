@@ -1,0 +1,10 @@
+available_lang: ["en","jp","zh","de","fr","ru","es","ar"]
+languages:
+  en: English 🇬🇧
+  jp: 日本語 🇯🇵
+  zh: 中文 🇨🇳
+  de: Deutsch 🇩🇪
+  fr: Français 🇫🇷
+  ru: Русский 🇷🇺
+  es: Español 🇪🇸
+  ar: العربية 🇦🇪

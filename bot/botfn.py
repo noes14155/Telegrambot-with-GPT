@@ -3,7 +3,7 @@ import random
 import aiohttp
 import re
 import requests
-from telebot.types import  ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import  ReplyKeyboardMarkup, KeyboardButton
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -12,9 +12,11 @@ from readability import Document
 from urllib.parse import urlparse
 from duckduckgo_search import DDGS
 from youtube_transcript_api import YouTubeTranscriptApi
+import yaml
 
 class botfn:
-    def __init__(self):
+    def __init__(self,lang):
+        self.lang = lang
         self._STYLE_OPTIONS = {
 	                        'Imagine V3':'IMAGINE_V3',
                             'Imagine V4 Beta':'IMAGINE_V4_Beta',
@@ -177,5 +179,7 @@ class botfn:
             markup.add(*[KeyboardButton(x) for x in self._RATIO_OPTIONS.keys()])
         elif key == 'style':
             markup.add(*[KeyboardButton(x) for x in self._STYLE_OPTIONS.keys()])
+        elif key == 'lang':
+           markup.add(*(KeyboardButton(f"{self.lang['languages'][lang_code]}({lang_code})") for lang_code in self.lang['available_lang']))        
         return markup
     
