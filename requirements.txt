@@ -1,5 +1,5 @@
 requests
-pyTelegramBotAPI
+aiogram
 aiohttp
 openai-whisper
 pytesseract

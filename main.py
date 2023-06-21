@@ -1,6 +1,6 @@
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import ParseMode
+from aiogram.types import ParseMode,File
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters import state
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -82,7 +82,7 @@ you will need to explain to the user in a specific language, completely translat
 the language to explain as a native is: {language}."""
     search_results = "No search query is needed for a response"
     text = await bn.generate_response(instruction,search_results,history={},prompt=welcome)
-    await call.reply(text=text)
+    await bot.send_message(call.chat.id,text=text)
 
 @dp.message_handler(commands=['help'])
 async def help_handler(call: types.Message):
@@ -91,7 +91,7 @@ async def help_handler(call: types.Message):
     help = f"""First, you will introduce yourself, you will welcome the user and talk about:
     Commands:
     /start : starts the bot\n\
-    /lang : changelang\n\
+    /lang : change language\n\
     /img : Generate image using imaginepy\n\
     /help : list all commands
     Some features:
@@ -104,12 +104,12 @@ all the previous information you will need to explain to the user in a specific 
 the language to explain as a native is: {language}."""
     search_results = "No search query is needed for a response"
     text = await bn.generate_response(instruction,search_results,history={},prompt=help)
-    await call.reply(text=text)
+    await bot.send_message(call.chat.id,text=text)
 
 @dp.message_handler(commands=['lang'])
 async def lang_handler(call: types.Message):
     markup = await bn.generate_keyboard('lang')
-    await call.reply(
+    await bot.send_message(call.chat.id,
         "Please select a language from the available languages:", reply_markup=markup
     )
     await MyStates.SELECT_LANG.set()
@@ -127,7 +127,7 @@ async def select_lang(call: types.Message, state: FSMContext):
 
 @dp.message_handler(commands=['img'])
 async def img_handler(call: types.Message):
-    await call.reply(text="Let's imagine something. Enter your prompt")
+    await bot.send_message(call.chat.id,text="Let's imagine something. Enter your prompt")
     await MyStates.SELECT_PROMPT.set()
 
 @dp.message_handler(state=MyStates.SELECT_PROMPT)
@@ -135,7 +135,7 @@ async def select_style(call: types.Message, state: FSMContext):
     async with state.proxy() as data:
         data['prompt'] = call.text
     markup = await bn.generate_keyboard('style')
-    await call.reply(
+    await bot.send_message(call.chat.id,
         "Please select a style:", reply_markup=markup
     )
     await MyStates.next()
@@ -146,12 +146,12 @@ async def select_ratio(call: types.Message, state: FSMContext):
         async with state.proxy() as data:
             data['style'] = bn._STYLE_OPTIONS[call.text]
         markup = await bn.generate_keyboard('ratio')
-        await call.reply(
+        await bot.send_message(call.chat.id,
             "Please select a ratio:", reply_markup=markup
         )
     else:
         markup = await bn.generate_keyboard('style')
-        await call.reply(
+        await bot.send_message(call.chat.id,
             "Select a valid style", reply_markup=markup
         )
         await MyStates.SELECT_STYLE.set()
@@ -172,11 +172,11 @@ async def generate_image(call: types.Message, state: FSMContext):
         filename = await text_task
         await call.reply_photo(photo=open(filename,'rb')) 
         markup = ReplyKeyboardRemove()  
-        await call.reply('Image Generated',reply_markup=markup)
+        await bot.send_message(call.chat.id,'Image Generated',reply_markup=markup)
         os.remove(filename)
     else:
         markup = await bn.generate_keyboard('ratio')
-        await call.reply(
+        await bot.send_message(call.chat.id,
             "Select a valid ratio", reply_markup=markup
         )
         await MyStates.SELECT_RATIO.set()
@@ -224,11 +224,11 @@ async def imageaudio_handler(call: types.Message):
     #for attachment in call.attachments:
     if call.content_type == 'photo':
         file_info = await bot.get_file(call.photo[-1].file_id)
-        image_url = f"https://api.telegram.org/file/bot{bot.token}/{file_info.file_path}"
+        image_url = f"https://api.telegram.org/file/bot{bot._token}/{file_info.file_path}"
         ocr_text = ocr.process_image(image_url)
         if HG_TOKEN and ocr_text:
             text = await bm.generate_imagecaption(image_url,HG_TOKEN)
-            await call.reply(text)
+            await bot.send_message(call.chat.id,text)
             prompt = 'System: The following is a image context provided by an image to text model.\
                  Generate a caption for the image context provided by an image-to-text model and respond appropriately.\n'\
                   + text + \
@@ -239,7 +239,7 @@ async def imageaudio_handler(call: types.Message):
         elif HG_TOKEN:
             text = await bm.generate_imagecaption(image_url,HG_TOKEN)
             ocr_text = ''
-            await call.reply(text)
+            await bot.send_message(call.chat.id,text)
             prompt = 'System: The following is a image context provided by an image to text model.\
                  Generate a caption for the image context provided by an image-to-text model and respond appropriately.\n'\
                   + text
@@ -253,15 +253,15 @@ async def imageaudio_handler(call: types.Message):
             prompt = '\nSystem: The image to text model could not read anything from the image the user sent. '
         prompt += '\nGenerate a response based on the context of an image, even if the image itself is not visible.'
     elif call.content_type == 'document':
-        file_path = await bm.download_file_from_message(bot,call)
+        file_path = await bm.download_file(call)
         text = await bm.read_document(file_path)
         prompt = f'\nSystem: Generate a response based on the contents of the file provided by the user. If there is no text present in the file, respond with "I couldn\'t read that."\n{text}'
         search_results = ''
         os.remove(file_path)
     elif call.content_type == 'audio' or 'voice':
-        audio_file_path = await bm.download_file_from_message(bot,call)
+        audio_file_path = await bm.download_file(call)
         text = await bm.transcribe_audio(audio_file_path)
-        sent = await call.reply('Transcribed audio:' + text)
+        sent = await bot.send_message(call.chat.id,'Transcribed audio:' + text)
         prompt = '\nSystem: The following is a transcription of the user\'s command generated by a voice-to-text model. Review it and generate appropriate response. If there are any transcription errors, please provide the appropriate response. If the text is empty or garbled, reply with "I didn\'t understand that."\n'+text
         os.remove(audio_file_path)
     else:
@@ -271,7 +271,7 @@ async def imageaudio_handler(call: types.Message):
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
     response = await bn.generate_response(instruction,search_results,history,prompt)
-    await call.reply(response)
+    await bot.send_message(call.chat.id,response)
     db.insert_history(call.chat.id, 'user', text)
     db.insert_history(call.chat.id, 'assistant', response)
 

@@ -8,6 +8,7 @@ import docx
 import openpyxl
 import pptx
 import email
+from aiogram import types
 from bs4 import BeautifulSoup
 from imaginepy import AsyncImagine, Style, Ratio
 
@@ -65,13 +66,14 @@ class botmedia:
         transcription = result["text"]
         return transcription
     
-    async def download_file_from_message(self,bot,message):
+    
+    async def download_file(self,message: types.Message):
         if message.audio is not None:
             file = message.audio
             file_extension = file.file_name.split(".")[-1] if file.file_name is not None else 'ogg'
         elif message.voice is not None:
             file = message.voice
-            file_extension = file.file_name.split(".")[-1] if file.file_name is not None else 'ogg'
+            file_extension = 'ogg'
         elif message.document is not None:
             file = message.document
             file_extension = file.file_name.split(".")[-1] if file.file_name is not None else ''
@@ -81,10 +83,7 @@ class botmedia:
         file_dir = 'downloaded_files'
         os.makedirs(file_dir, exist_ok=True)
         full_file_path = os.path.join(file_dir, file_path)
-        file_info = await bot.get_file(file.file_id)
-        downloaded_file = await bot.download_file(file_info.file_path)
-        with open(full_file_path, 'wb') as new_file:
-            new_file.write(downloaded_file)
+        downloadfile = await file.download(destination_file=full_file_path)
         return full_file_path
     
     async def read_document(self,filename):
