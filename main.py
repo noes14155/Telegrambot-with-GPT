@@ -1,5 +1,5 @@
 from aiogram.types import ReplyKeyboardRemove
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, executor
 from aiogram.types import ParseMode,File
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -278,7 +278,17 @@ async def imageaudio_handler(call: types.Message):
     db.insert_history(call.chat.id, 'user', text)
     db.insert_history(call.chat.id, 'assistant', response)
 
+async def set_commands():
+    commands = [
+    types.BotCommand(command="/start", description="🌟"),
+    types.BotCommand(command="/hello", description="🌟"),
+    types.BotCommand(command="/img", description="🎨"),
+    types.BotCommand(command="/lang", description="🌐"),
+    types.BotCommand(command="/help", description="ℹ️")
+    ]
+    await bot.set_my_commands(commands)
 async def main():
+    await set_commands()
     await dp.start_polling()
 
 if __name__ == '__main__':
