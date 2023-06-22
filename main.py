@@ -170,7 +170,7 @@ async def generate_image(call: types.Message, state: FSMContext):
                           ratio_value=ratio,negative=''))
         filename = await text_task
         if filename:
-            await call.reply_photo(photo=open(filename,'rb'))
+            await bot.send_photo(call.chat.id,photo=open(filename,'rb'))
             markup = ReplyKeyboardRemove()  
             await bot.send_message(call.chat.id,'Image Generated',reply_markup=markup)
             os.remove(filename)

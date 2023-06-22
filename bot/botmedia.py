@@ -36,10 +36,11 @@ class botmedia:
                         return f"Error: {response.get('error')}"
 
     async def generate_image(self,image_prompt, style_value, ratio_value, negative):
-        imagine = AsyncImagine()
+        
         filename = "image.png"
         style_enum = Style[style_value]
         ratio_enum = Ratio[ratio_value]
+        imagine = AsyncImagine(style_enum)
         img_data = await imagine.sdprem(
             prompt=image_prompt,
             style=style_enum,
@@ -49,6 +50,10 @@ class botmedia:
             steps="70",
             negative=negative
         )
+        if img_data is None:
+            print("An error occurred while generating the image.")
+            return
+        #img_data = await imagine.upscale(image=img_data)
         try:
             with open(filename, mode="wb") as img_file:
                 img_file.write(img_data)
