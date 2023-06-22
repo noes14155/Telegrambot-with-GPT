@@ -25,7 +25,7 @@ class Database:
 
     def insert_settings(self, user_id, lang):
         query = '''INSERT OR IGNORE INTO settings (user_id, lang)
-                 VALUES (?, ?, ?)'''
+                 VALUES (?, ?)'''
         self.conn.execute(query, (user_id, lang))
         self.conn.commit()
 
