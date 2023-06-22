@@ -25,13 +25,6 @@ if os.path.exists('lang.yml'):
 else:
     print('lang.yml does not exist.')
     exit
-language = os.getenv('LANG')
-if os.path.exists('lang.yml'):
-    with open("lang.yml", 'r', encoding='utf8') as f:
-        lang = yaml.safe_load(f)
-else:
-    print('lang.yml does not exist.')
-    exit
 instruction_file = 'instructions.txt'
 messages = [
     "Please wait...","Hang on a sec...","Just a moment...","Processing your request...",
@@ -168,18 +161,22 @@ async def select_ratio(call: types.Message, state: FSMContext):
 async def generate_image(call: types.Message, state: FSMContext):
     if call.text in bn._RATIO_OPTIONS.keys():
         chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
-        async with state.get_data() as data:
-            prompt = data['prompt']
-            style = data['style']
+        data = await state.get_data()
+        prompt = data['prompt']
+        style = data['style']
         ratio = bn._RATIO_OPTIONS[call.text]
         text_task = asyncio.create_task(bm.generate_image(image_prompt=prompt,
                           style_value=style ,
                           ratio_value=ratio,negative=''))
         filename = await text_task
-        await call.reply_photo(photo=open(filename,'rb')) 
-        markup = ReplyKeyboardRemove()  
-        await bot.send_message(call.chat.id,'Image Generated',reply_markup=markup)
-        os.remove(filename)
+        if filename:
+            await call.reply_photo(photo=open(filename,'rb'))
+            markup = ReplyKeyboardRemove()  
+            await bot.send_message(call.chat.id,'Image Generated',reply_markup=markup)
+            os.remove(filename)
+        else:
+            markup = ReplyKeyboardRemove()
+            await bot.send_message(call.chat.id,'Generation error',reply_markup=markup)
     else:
         markup = await bn.generate_keyboard('ratio')
         await bot.send_message(call.chat.id,
