@@ -8,6 +8,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /tmp
+RUN pip install openai-whisper
 RUN pip install --upgrade pip \
  && pip install -r /tmp/requirements.txt \
  && rm /tmp/requirements.txt
