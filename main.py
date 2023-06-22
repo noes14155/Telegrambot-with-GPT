@@ -288,10 +288,8 @@ async def set_commands():
     ]
     await bot.set_my_commands(commands)
 async def main():
-    await set_commands()
-    await dp.start_polling()
+    await asyncio.gather(set_commands(), dp.start_polling())
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
 db.close_connection()
