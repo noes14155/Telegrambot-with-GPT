@@ -2,9 +2,7 @@
 Simple telegram bot with chatgpt       
 Hugging face token is only required for image captioning.    
 Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
-If you want to use any other model change HG_img2text value. Change it in the environment variables.        
-
-Image generation is broken. I know. I am looking for an alternative to Imaginepy       
+If you want to use any other model change HG_img2text value. Change it in the environment variables.               
         
 
 Internet access using [duckduckgo_search](https://github.com/deedy5/duckduckgo_search)
