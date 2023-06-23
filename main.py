@@ -83,6 +83,11 @@ the language to explain as a native is: {language}."""
     text = await bn.generate_response(instruction,search_results,history={},prompt=welcome)
     await bot.send_message(call.chat.id,text=text)
 
+@dp.message_handler(commands=['clear'])
+async def clear_handler(call: types.Message):
+    db.delete_user_history(call.chat.id)
+    await bot.send_message(call.chat.id,"History Cleared")
+
 @dp.message_handler(commands=['help'])
 async def help_handler(call: types.Message):
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
@@ -92,6 +97,7 @@ async def help_handler(call: types.Message):
     /start : starts the bot\n\
     /lang : change language\n\
     /img : Generate image using imaginepy\n\
+    /clear : Clear history/context for the bot\n\
     /help : list all commands
     Some features:
 🎨 User can make the bot generate image generation with /img
@@ -165,6 +171,7 @@ async def generate_image(call: types.Message, state: FSMContext):
         prompt = data['prompt']
         style = data['style']
         ratio = bn._RATIO_OPTIONS[call.text]
+        await bot.send_chat_action(call.chat.id,"upload_photo")
         text_task = asyncio.create_task(bm.generate_image(image_prompt=prompt,
                           style_value=style ,
                           ratio_value=ratio,negative=''))
@@ -176,7 +183,7 @@ async def generate_image(call: types.Message, state: FSMContext):
             os.remove(filename)
         else:
             markup = ReplyKeyboardRemove()
-            await bot.send_message(call.chat.id,'Generation error',reply_markup=markup)
+            await bot.send_message(call.chat.id,'Image Generation error',reply_markup=markup)
     else:
         markup = await bn.generate_keyboard('ratio')
         await bot.send_message(call.chat.id,
@@ -197,7 +204,7 @@ async def chat(call:types.Message):
     for row in rows:
         role, content = row
         history.append({"role": role, "content": content})
-    instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
+    instruction += f'\nYou will need to reply to the user in {language} as a native. Even if the user queries in another language reply only in {language}. Completely translated.'
     search_results = await bn.search_ddg(call.text)
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
@@ -218,7 +225,7 @@ async def imageaudio_handler(call: types.Message):
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     global instruction
     language = lang['languages'][db.get_settings(call.from_user.id)]
-    instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
+    instruction += f'\nYou will need to reply to the user in {language} as a native. Even if the user queries in another language reply only in {language}. Completely translated.'
     rows = db.get_history(call.from_user.id)[-10:]
     history = []
     for row in rows:
@@ -280,10 +287,10 @@ async def imageaudio_handler(call: types.Message):
 
 async def set_commands():
     commands = [
-    types.BotCommand(command="/start", description="🌟"),
     types.BotCommand(command="/hello", description="🌟"),
     types.BotCommand(command="/img", description="🎨"),
     types.BotCommand(command="/lang", description="🌐"),
+    types.BotCommand(command='/clear', description="🧹"),
     types.BotCommand(command="/help", description="ℹ️")
     ]
     await bot.set_my_commands(commands)
