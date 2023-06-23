@@ -22,8 +22,8 @@ if os.path.exists('lang.yml'):
     with open("lang.yml", 'r', encoding='utf8') as f:
         lang = yaml.safe_load(f)
 else:
-    print('lang.yml does not exist.')
-    exit
+    print('lang.yml does not exist. Defaulting to English')
+    lang = {'available_lang':['en'],'languages':{'en':'English 🇬🇧'}}
 instruction_file = 'instructions.txt'
 messages = [
     "Please wait...","Hang on a sec...","Just a moment...","Processing your request...",
@@ -51,6 +51,24 @@ if BOT_TOKEN == "":
 storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot,storage=storage)
+
+PLUGINS = False
+plugins_dict = {
+    "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with:\
+      \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve.\
+        Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END]\
+        Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
+        Even if you got the input in a different language, always use english in the wolframalpha query.",
+    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgosearch <query> END]\" where query is the text you want to serach for.\
+         If a message is not directly addressed to you, initiate a search query. "
+}
+for plugin in plugins_dict:
+    plugins_string = f"\n{plugin}: {plugins_dict[plugin]}"
+PLUGIN_PROMPT = f"You will be given a list of plugins with description.\
+                Based on what the plugin's description says, if you think a plugin is appropriate to use,\
+                answer with the instructions to use it. If no plugin is needed, do not mention them.\
+                The available plugins are: {plugins_string}"
 
 class MyStates(StatesGroup):
     SELECT_PROMPT = State() 
@@ -90,7 +108,7 @@ async def clear_handler(call: types.Message):
 @dp.message_handler(commands=['help'])
 async def help_handler(call: types.Message):
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
-    language = lang['languages'][db.get_settings(call.from_user.id)]
+    language = lang['languages'].get(db.get_settings(call.from_user.id), lang['languages']['en'])
     help = f"""First, you will introduce yourself, you will welcome the user and talk about:
     Commands:
     /start : starts the bot\n\
@@ -195,7 +213,7 @@ async def generate_image(call: types.Message, state: FSMContext):
 @dp.message_handler(content_types=['text'])
 async def chat(call:types.Message):
     global instruction
-    language = lang['languages'][db.get_settings(call.from_user.id)]
+    language = lang['languages'].get(db.get_settings(call.from_user.id), lang['languages']['en'])
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     rows = db.get_history(call.from_user.id)[-9:]
     history = []
@@ -223,7 +241,7 @@ async def chat(call:types.Message):
 async def imageaudio_handler(call: types.Message): 
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     global instruction
-    language = lang['languages'][db.get_settings(call.from_user.id)]
+    language = lang['languages'].get(db.get_settings(call.from_user.id), lang['languages']['en'])
     instruction += f'\nYou will need to reply to the user in {language} as a native. Even if the user queries in another language reply only in {language}. Completely translated.'
     rows = db.get_history(call.from_user.id)[-10:]
     history = []
