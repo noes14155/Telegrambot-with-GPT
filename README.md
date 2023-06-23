@@ -1,5 +1,5 @@
 # Telegrambot-with-GPT4free
-Simple telegram bot with chatgpt       
+Simple telegram bot with chatgpt. Aiogram API.       
 Hugging face token is only required for image captioning.    
 Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
 If you want to use any other model change HG_img2text value. Change it in the environment variables.               

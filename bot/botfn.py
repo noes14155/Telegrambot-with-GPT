@@ -12,7 +12,6 @@ from readability import Document
 from urllib.parse import urlparse
 from duckduckgo_search import DDGS
 from youtube_transcript_api import YouTubeTranscriptApi
-import yaml
 
 class botfn:
     def __init__(self,lang):

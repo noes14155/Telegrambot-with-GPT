@@ -7,7 +7,6 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from dotenv import load_dotenv
 from bot import botfn,botdb,botocr,botmedia
 import yaml
-import yaml
 import datetime
 import os
 import asyncio
