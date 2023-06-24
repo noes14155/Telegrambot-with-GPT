@@ -7,7 +7,6 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from dotenv import load_dotenv
 from bot import botfn,botdb,botocr,botmedia
 import yaml
-import yaml
 import datetime
 import os
 import asyncio
@@ -23,8 +22,8 @@ if os.path.exists('lang.yml'):
     with open("lang.yml", 'r', encoding='utf8') as f:
         lang = yaml.safe_load(f)
 else:
-    print('lang.yml does not exist.')
-    exit
+    print('lang.yml does not exist. Defaulting to English')
+    lang = {'available_lang':['en'],'languages':{'en':'English 🇬🇧'}}
 instruction_file = 'instructions.txt'
 messages = [
     "Please wait...","Hang on a sec...","Just a moment...","Processing your request...",
@@ -53,6 +52,29 @@ storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot,storage=storage)
 
+PLUGINS = False
+plugins_dict = {
+    "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with:\
+      \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve.\
+        Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END]\
+        Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
+        Even if you got the input in a different language, always use english in the wolframalpha query.",
+    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgosearch <query> END]\" where query is the text you want to search for and use context to make your own search queries.\
+         If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
+        No need to initiate search query again. As an AI Language model if you don't have access to real time information\
+        initiate a search query.",
+    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgonews <query> END]\" where query is the text you want to get news about. Use context to make your own queries if necessary."
+}
+plugins_string = ''
+for plugin in plugins_dict:
+    plugins_string += f"\n{plugin}: {plugins_dict[plugin]}"
+PLUGIN_PROMPT = f"You will be given a list of plugins with description.\
+                Based on what the plugin's description says, if you think a plugin is appropriate to use,\
+                answer with the instructions to use it. If no plugin is needed, do not mention them.\
+                The available plugins are: {plugins_string}"
+
 class MyStates(StatesGroup):
     SELECT_PROMPT = State() 
     SELECT_STYLE = State()
@@ -80,18 +102,24 @@ async def start_handler(call: types.Message):
 you will need to explain to the user in a specific language, completely translated.
 the language to explain as a native is: {language}."""
     search_results = "No search query is needed for a response"
-    text = await bn.generate_response(instruction,search_results,history={},prompt=welcome)
+    text = await bn.generate_response(instruction,'','',history={},prompt=welcome)
     await bot.send_message(call.chat.id,text=text)
+
+@dp.message_handler(commands=['clear'])
+async def clear_handler(call: types.Message):
+    db.delete_user_history(call.chat.id)
+    await bot.send_message(call.chat.id,"History Cleared")
 
 @dp.message_handler(commands=['help'])
 async def help_handler(call: types.Message):
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
-    language = lang['languages'][db.get_settings(call.from_user.id)]
+    language = lang['languages'].get(db.get_settings(call.from_user.id), lang['languages']['en'])
     help = f"""First, you will introduce yourself, you will welcome the user and talk about:
     Commands:
     /start : starts the bot\n\
     /lang : change language\n\
     /img : Generate image using imaginepy\n\
+    /clear : Clear history/context for the bot\n\
     /help : list all commands
     Some features:
 🎨 User can make the bot generate image generation with /img
@@ -102,7 +130,7 @@ you will be pleasant and attentive, you will not miss any detail, remember to us
 all the previous information you will need to explain to the user in a specific language, completely translated.
 the language to explain as a native is: {language}."""
     search_results = "No search query is needed for a response"
-    text = await bn.generate_response(instruction,search_results,history={},prompt=help)
+    text = await bn.generate_response(instruction,'','',history={},prompt=help)
     await bot.send_message(call.chat.id,text=text)
 
 @dp.message_handler(commands=['lang'])
@@ -165,18 +193,19 @@ async def generate_image(call: types.Message, state: FSMContext):
         prompt = data['prompt']
         style = data['style']
         ratio = bn._RATIO_OPTIONS[call.text]
+        await bot.send_chat_action(call.chat.id,"upload_photo")
         text_task = asyncio.create_task(bm.generate_image(image_prompt=prompt,
                           style_value=style ,
                           ratio_value=ratio,negative=''))
         filename = await text_task
         if filename:
-            await call.reply_photo(photo=open(filename,'rb'))
+            await bot.send_photo(call.chat.id,photo=open(filename,'rb'))
             markup = ReplyKeyboardRemove()  
             await bot.send_message(call.chat.id,'Image Generated',reply_markup=markup)
             os.remove(filename)
         else:
             markup = ReplyKeyboardRemove()
-            await bot.send_message(call.chat.id,'Generation error',reply_markup=markup)
+            await bot.send_message(call.chat.id,'Image Generation error',reply_markup=markup)
     else:
         markup = await bn.generate_keyboard('ratio')
         await bot.send_message(call.chat.id,
@@ -189,36 +218,41 @@ async def generate_image(call: types.Message, state: FSMContext):
 @dp.message_handler(content_types=['text'])
 async def chat(call:types.Message):
     global instruction
-    language = lang['languages'][db.get_settings(call.from_user.id)]
+    language = lang['languages'].get(db.get_settings(call.from_user.id), lang['languages']['en'])
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
-    rows = db.get_history(call.from_user.id)[-9:]
+    rows = db.get_history(call.from_user.id)[-5:]
     history = []
     prompt = call.text
     for row in rows:
         role, content = row
         history.append({"role": role, "content": content})
-    instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
-    search_results = await bn.search_ddg(call.text)
-    if not search_results:
-        search_results = 'Search feature is currently disabled so you have no realtime information'
+    instruction += f'\nYou will need to reply to the user in {language} as a native. Even if the user queries in another language reply only in {language}. Completely translated.'
+    #search_results = await bn.search_ddg(call.text)
+    #if not search_results:
+    #    search_results = 'Search feature is currently disabled so you have no realtime information'
     web_text = await bn.extract_text_from_website(call.text)
     if web_text is not None:
         prompt = web_text
     yt_transcript = await bn.get_yt_transcript(call.text)
     if yt_transcript is not None:
         prompt = yt_transcript
-    text = await bn.generate_response(instruction,search_results,history,prompt)
+    EXTRA_PROMPT = 'As an AI language model, you have access to various plugins that can provide real-time information. Use these plugins to enhance your responses and provide up-to-date information to the user'
+    text = await bn.generate_response(PLUGIN_PROMPT,'plugins',EXTRA_PROMPT,{},prompt)
+    result, plugin_name = await bn.generate_query(text,plugins_dict)
+    if result is None and plugin_name is None:
+        text = await bn.generate_response(instruction,'','',history,prompt)
+    else:
+        text = await bn.generate_response(instruction,plugin_name,result,history,prompt)
     db.insert_history(call.from_user.id, 'user', call.text)
     db.insert_history(call.from_user.id, 'assistant', text)
-    message_task = asyncio.create_task(bot.send_message(call.chat.id,text))
-    message = await message_task
+    await bot.send_message(call.chat.id,text)
 
 @dp.message_handler(content_types=['voice', 'audio', 'photo', 'document'])
 async def imageaudio_handler(call: types.Message): 
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
     global instruction
-    language = lang['languages'][db.get_settings(call.from_user.id)]
-    instruction += f'\nYou will need to reply to the user in {language} as a native. Completely translated.'
+    language = lang['languages'].get(db.get_settings(call.from_user.id), lang['languages']['en'])
+    instruction += f'\nYou will need to reply to the user in {language} as a native. Even if the user queries in another language reply only in {language}. Completely translated.'
     rows = db.get_history(call.from_user.id)[-10:]
     history = []
     for row in rows:
@@ -273,25 +307,23 @@ async def imageaudio_handler(call: types.Message):
         search_results = await bn.search_ddg(text)
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
-    response = await bn.generate_response(instruction,search_results,history,prompt)
+    response = await bn.generate_response(instruction,'','',history,prompt)
     await call.reply(response)
     db.insert_history(call.chat.id, 'user', text)
     db.insert_history(call.chat.id, 'assistant', response)
 
 async def set_commands():
     commands = [
-    types.BotCommand(command="/start", description="🌟"),
     types.BotCommand(command="/hello", description="🌟"),
     types.BotCommand(command="/img", description="🎨"),
     types.BotCommand(command="/lang", description="🌐"),
+    types.BotCommand(command='/clear', description="🧹"),
     types.BotCommand(command="/help", description="ℹ️")
     ]
     await bot.set_my_commands(commands)
 async def main():
-    await set_commands()
-    await dp.start_polling()
+    await asyncio.gather(set_commands(), dp.start_polling())
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    asyncio.run(main())
 db.close_connection()

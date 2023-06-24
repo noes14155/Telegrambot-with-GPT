@@ -12,7 +12,6 @@ from readability import Document
 from urllib.parse import urlparse
 from duckduckgo_search import DDGS
 from youtube_transcript_api import YouTubeTranscriptApi
-import yaml
 
 class botfn:
     def __init__(self,lang):
@@ -52,7 +51,7 @@ class botfn:
 
         #self.ddg_url = 'https://api.duckduckgo.com/'
 
-    async def generate_response(self,instruction,search_results,history,prompt):
+    async def generate_response(self,instruction,plugin_name,plugin_result,history,prompt):
         base_urls = ['https://gpt4.gravityengine.cc']
         arguments = '/api/openai/v1/chat/completions'
         headers = {'Content-Type': 'application/json'}
@@ -60,7 +59,7 @@ class botfn:
             'model': 'gpt-3.5-turbo-16k-0613',
             'temperature': 0.75,
             'messages': [
-                {"role": "system", "content": search_results},
+                {"role": "system", "content": plugin_result},
                 {"role": "system", "content": instruction},
                 *history,
                 {"role": "user", "content": prompt},
@@ -95,12 +94,9 @@ class botfn:
                     for i, result in enumerate(results):
                         if i >= 3:
                             break
-                        #extracted_text = await self.extract_text_from_website(result.get('href'))
-                        #if extracted_text is not None:
                         results_list.append({
                             "snippet": result.get('body'),
                             "link": result.get('href'),
-                            #"extracted_text": extracted_text
                         })
                     blob = f"Search results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
                     template = "[{index}] \"{snippet}\"\nURL: {link}\n"
@@ -112,21 +108,28 @@ class botfn:
             else:
                 blob = "No search query is needed for a response"
             return blob
-    async def news_ddg(self,query='latest world news'):
+    async def news_ddg(self,prompt='latest world news'):
       with DDGS() as ddgs:
-        ddgs_news_gen = ddgs.news(
-                        keywords=query,
-                        region="wt-wt",
-                        safesearch="Off",
-                        timelimit="m",
-                        )
-        
-        result = []
-        for r in ddgs_news_gen:
-           result.append(r)
-           if len(result)>5:
-               break
-        return result
+        if prompt is not None:
+                    results = ddgs.text(keywords=prompt,region='wt-wt',safesearch='off')
+                    results_list = []
+                    for i, result in enumerate(results):
+                        if i >= 3:
+                            break
+                        results_list.append({
+                            "snippet": result.get('body'),
+                            "link": result.get('href'),
+                        })
+                    blob = f"News results for '{prompt}' at {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}:\n\n"
+                    template = "[{index}] \"{snippet}\"\nURL: {link}\n"
+                    for i, result in enumerate(results_list):
+                        blob += template.format(index=i, snippet=result["snippet"], link=result["link"])
+                    blob +='\nThese are the latest news articles related to the user\'s query.\n\n'
+                    #print(blob)
+                    
+        else:
+            blob = "No search query is needed for a response"
+        return blob
 
     async def get_yt_transcript(self,message_content):
         def extract_video_id(message_content):
@@ -183,3 +186,26 @@ class botfn:
            markup.add(*(KeyboardButton(f"{self.lang['languages'][lang_code]}({lang_code})") for lang_code in self.lang['available_lang']))        
         return markup
     
+    async def generate_query(self, response, plugins_dict):
+        opening_bracket = response.find("[")
+        closing_bracket = response.find("]")
+    
+        if opening_bracket != -1 and closing_bracket != -1:
+            plugin_text = response[opening_bracket + 1 : closing_bracket]
+            plugin_parts = plugin_text.split()
+            plugin_name = plugin_parts[0]
+            query = " ".join(plugin_parts[1:])
+
+            if plugin_name is not None and query is not None:
+                if plugin_name.lower() == "wolframalpha":
+                    return 'wolframalpha plugin is not yet implemented so provide a response yourself', plugin_name
+                elif plugin_name.lower() == "duckduckgosearch":
+                    return await self.search_ddg(query), plugin_name
+                elif plugin_name.lower() == "duckduckgonews":
+                    return await self.news_ddg(query), plugin_name
+                else:
+                    return None, None
+            else:
+                return None, None
+        else:
+            return None, None

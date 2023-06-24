@@ -53,3 +53,8 @@ class Database:
         query = '''SELECT role, content FROM history WHERE user_id=?'''
         rows = self.conn.execute(query, (user_id,)).fetchall()
         return rows
+    
+    def delete_user_history(self, user_id):
+        query = '''DELETE FROM history WHERE user_id = ?'''
+        self.conn.execute(query, (user_id,))
+        self.conn.commit()
