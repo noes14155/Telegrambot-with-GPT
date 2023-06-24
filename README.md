@@ -10,6 +10,7 @@ Supports voice transcription with [openai whisper](https://github.com/openai/whi
 Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)
 
        
+Support for plugins duckduckgo search and news. Ask for latest news on a topic (Under testing).        
 
 ## Install
 
