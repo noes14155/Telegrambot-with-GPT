@@ -60,11 +60,16 @@ plugins_dict = {
         Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
         Even if you got the input in a different language, always use english in the wolframalpha query.",
     "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
-        \"[duckduckgosearch <query> END]\" where query is the text you want to serach for.\
-         If a message is not directly addressed to you, initiate a search query. "
+        \"[duckduckgosearch <query> END]\" where query is the text you want to search for and use context to make your own search queries.\
+         If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
+        No need to initiate search query again. As an AI Language model if you don't have access to real time information\
+        initiate a search query.",
+    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgonews <query> END]\" where query is the text you want to get news about. Use context to make your own queries if necessary."
 }
+plugins_string = ''
 for plugin in plugins_dict:
-    plugins_string = f"\n{plugin}: {plugins_dict[plugin]}"
+    plugins_string += f"\n{plugin}: {plugins_dict[plugin]}"
 PLUGIN_PROMPT = f"You will be given a list of plugins with description.\
                 Based on what the plugin's description says, if you think a plugin is appropriate to use,\
                 answer with the instructions to use it. If no plugin is needed, do not mention them.\
@@ -97,7 +102,7 @@ async def start_handler(call: types.Message):
 you will need to explain to the user in a specific language, completely translated.
 the language to explain as a native is: {language}."""
     search_results = "No search query is needed for a response"
-    text = await bn.generate_response(instruction,search_results,history={},prompt=welcome)
+    text = await bn.generate_response(instruction,'','',history={},prompt=welcome)
     await bot.send_message(call.chat.id,text=text)
 
 @dp.message_handler(commands=['clear'])
@@ -125,7 +130,7 @@ you will be pleasant and attentive, you will not miss any detail, remember to us
 all the previous information you will need to explain to the user in a specific language, completely translated.
 the language to explain as a native is: {language}."""
     search_results = "No search query is needed for a response"
-    text = await bn.generate_response(instruction,search_results,history={},prompt=help)
+    text = await bn.generate_response(instruction,'','',history={},prompt=help)
     await bot.send_message(call.chat.id,text=text)
 
 @dp.message_handler(commands=['lang'])
@@ -215,27 +220,29 @@ async def chat(call:types.Message):
     global instruction
     language = lang['languages'].get(db.get_settings(call.from_user.id), lang['languages']['en'])
     chat_action_task = asyncio.create_task(send_with_waiting_message(call.chat.id))
-    rows = db.get_history(call.from_user.id)[-9:]
+    rows = db.get_history(call.from_user.id)[-5:]
     history = []
     prompt = call.text
     for row in rows:
         role, content = row
         history.append({"role": role, "content": content})
     instruction += f'\nYou will need to reply to the user in {language} as a native. Even if the user queries in another language reply only in {language}. Completely translated.'
-    search_results = await bn.search_ddg(call.text)
-    if not search_results:
-        search_results = 'Search feature is currently disabled so you have no realtime information'
+    #search_results = await bn.search_ddg(call.text)
+    #if not search_results:
+    #    search_results = 'Search feature is currently disabled so you have no realtime information'
     web_text = await bn.extract_text_from_website(call.text)
     if web_text is not None:
         prompt = web_text
     yt_transcript = await bn.get_yt_transcript(call.text)
     if yt_transcript is not None:
         prompt = yt_transcript
-    text = await bn.generate_response(instruction,search_results,history,prompt)
+    text = await bn.generate_response(instruction,'plugins',PLUGIN_PROMPT,history,prompt)
+    result, plugin_name = await bn.generate_query(text,plugins_dict)
+    if result is not None and plugin_name is not None:
+        text = await bn.generate_response(instruction,plugin_name,result,history,prompt)
     db.insert_history(call.from_user.id, 'user', call.text)
     db.insert_history(call.from_user.id, 'assistant', text)
-    message_task = asyncio.create_task(bot.send_message(call.chat.id,text))
-    message = await message_task
+    await bot.send_message(call.chat.id,text)
 
 @dp.message_handler(content_types=['voice', 'audio', 'photo', 'document'])
 async def imageaudio_handler(call: types.Message): 
@@ -297,7 +304,7 @@ async def imageaudio_handler(call: types.Message):
         search_results = await bn.search_ddg(text)
     if not search_results:
         search_results = 'Search feature is currently disabled so you have no realtime information'
-    response = await bn.generate_response(instruction,search_results,history,prompt)
+    response = await bn.generate_response(instruction,'','',history,prompt)
     await call.reply(response)
     db.insert_history(call.chat.id, 'user', text)
     db.insert_history(call.chat.id, 'assistant', response)
