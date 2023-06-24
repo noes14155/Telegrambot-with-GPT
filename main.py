@@ -236,9 +236,12 @@ async def chat(call:types.Message):
     yt_transcript = await bn.get_yt_transcript(call.text)
     if yt_transcript is not None:
         prompt = yt_transcript
-    text = await bn.generate_response(instruction,'plugins',PLUGIN_PROMPT,history,prompt)
+    EXTRA_PROMPT = 'As an AI language model, you have access to various plugins that can provide real-time information. Use these plugins to enhance your responses and provide up-to-date information to the user'
+    text = await bn.generate_response(PLUGIN_PROMPT,'plugins',EXTRA_PROMPT,{},prompt)
     result, plugin_name = await bn.generate_query(text,plugins_dict)
-    if result is not None and plugin_name is not None:
+    if result is None and plugin_name is None:
+        text = await bn.generate_response(instruction,'','',history,prompt)
+    else:
         text = await bn.generate_response(instruction,plugin_name,result,history,prompt)
     db.insert_history(call.from_user.id, 'user', call.text)
     db.insert_history(call.from_user.id, 'assistant', text)
