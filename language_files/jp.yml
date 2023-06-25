@@ -131,17 +131,17 @@ AI言語モデルとして、あなたはリアルタイムの情報を提供で
 これらのプラグインを使用して、応答を強化し、ユーザーに最新の情報を提供します。
 "
 
-plugins_dict: {
-    "wolframalpha" : "Wolframalphaプラグインを使うと, 数学演算ができます．使用する場合は、次のように正確に答えてください。
-      \WOLFRAMALPHA <query> END]queryは解く必要のある演算です。
-        例 入力： 例: 入力: xについて解く: 2x+3=5 出力：[WOLFRAMALPHA <問> END].[WOLFRAMALPHA solve (2x+3=5) for x END]。
-        入力： A*2=B A*2=B B を解く： [WOLFRAMALPHA solve (A*2=B) for B END]です。
-        入力が異なる言語であったとしても、wolframalphaクエリでは常に英語を使ってください。"、
-    "duckduckgosearch" : "Duckduckgosearchプラグインは、インターネットを検索することができます。使用する場合は、次のように正確に答えてください。
-        \"duckduckgosearch" "duckduckgosearchプラグインを使用すると、インターネットを検索することができます。
-         メッセージが直接あなた宛でない場合は、検索クエリを開始します。検索結果がシステムから提供された場合は、それを使用して回答できます。
-        再び検索クエリを開始する必要はありません。リアルタイムの情報にアクセスできない場合は、AI言語モデルとして
-        検索クエリを開始する、
-    "duckduckgonews" : "duckduckgonewsプラグインを使用すると、インターネットから最新のニュースを取得することができます。を正確に答えてください。
-        \duckduckgonews <query> END]queryはニュースを取得したいテキストです。必要であれば、文脈を使って独自のクエリを作成してください。"
+plugins_dict : {
+    "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with:\
+      \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve.\
+        Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END]\
+        Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
+        Even if you got the input in a different language, always use english in the wolframalpha query.",
+    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgosearch <query> END]\" where query is the text you want to search for and use context to make your own search queries.\
+         If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
+        No need to initiate search query again. As an AI Language model if you don't have access to real time information\
+        initiate a search query.",
+    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgonews <query> END]\" where query is the text you want to get news about. Use context to make your own queries if necessary."
 }

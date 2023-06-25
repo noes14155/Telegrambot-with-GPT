@@ -132,16 +132,16 @@ EXTRA_PROMPT: "
 "
 
 plugins_dict : {
-    "wolframalpha": "Плагин Wolframalpha позволяет выполнять математические операции. Если уместно использовать его, ответьте точно:\
-      \"[WOLFRAMALPHA <query> END]\", где query - операция, которую вам нужно решить.\
-        Примеры: Ввод: Решить для x: 2x+3=5 Выход: [WOLFRAMALPHA решить (2x+3=5) для x END]\
-        Ввод: A*2=B Решить для B Вывод: [WOLFRAMALPHA solve (A*2=B) for B END]\
-        Даже если вы получили входные данные на другом языке, всегда используйте английский в запросе wolframalpha.",
-    "duckduckgosearch" : "Плагин Duckduckgosearch позволяет искать в интернете. Если уместно использовать его, ответьте точно так:\
-        \"[duckduckgosearch <query> END]\", где query - текст, который вы хотите найти, и используйте контекст для составления собственных поисковых запросов.\
-         Если сообщение не адресовано непосредственно вам, инициируйте поисковый запрос. Если результаты поиска будут предоставлены системой, вы можете использовать их для ответа\\.
-        Нет необходимости снова инициировать поисковый запрос. Если у вас нет доступа к информации в реальном времени,\ если у вас нет доступа к информации в реальном времени.
-        инициируйте поисковый запрос",
-    "duckduckgonews" : "Плагин duckduckgonews позволяет вам получать последние новости из интернета. Если уместно использовать его, ответьте точно:\
-        \"[duckduckgonews <query> END]\", где query - текст, о котором вы хотите получить новости. При необходимости используйте контекст для составления собственных запросов."
+    "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with:\
+      \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve.\
+        Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END]\
+        Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
+        Even if you got the input in a different language, always use english in the wolframalpha query.",
+    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgosearch <query> END]\" where query is the text you want to search for and use context to make your own search queries.\
+         If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
+        No need to initiate search query again. As an AI Language model if you don't have access to real time information\
+        initiate a search query.",
+    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgonews <query> END]\" where query is the text you want to get news about. Use context to make your own queries if necessary."
 }

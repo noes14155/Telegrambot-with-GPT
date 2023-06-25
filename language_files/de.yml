@@ -132,16 +132,16 @@ Verwenden Sie diese Plugins, um Ihre Antworten zu verbessern und dem Benutzer ak
 "
 
 plugins_dict : {
-    "wolframalpha": "Mit dem Wolframalpha-Plugin können Sie mathematische Operationen durchführen. Wenn Sie es verwenden wollen, antworten Sie genau mit:\
-      \"[WOLFRAMALPHA <Abfrage> END]\", wobei "Abfrage" die zu lösende Operation ist.\
-        Beispiele: Eingabe: Lösen Sie für x: 2x+3=5 Ausgabe: [WOLFRAMALPHA solve (2x+3=5) for x END]\
-        Eingabe: A*2=B lösen für B Ausgabe: [WOLFRAMALPHA solve (A*2=B) for B END].\
-        Auch wenn Sie die Eingabe in einer anderen Sprache erhalten haben, verwenden Sie immer Englisch in der wolframalpha-Abfrage.",
-    "duckduckgosearch" : "Mit dem Plugin Duckduckgosearch kannst du das Internet durchsuchen. Wenn es angebracht ist, es zu benutzen, antworten Sie genau mit:\
-        \"[duckduckgosearch <query> END]\", wobei query der Text ist, nach dem Sie suchen möchten, und verwenden Sie den Kontext, um Ihre eigenen Suchanfragen zu stellen.\
-         Wenn eine Nachricht nicht direkt an Sie gerichtet ist, initiieren Sie eine Suchanfrage. Wenn das System Suchergebnisse liefert, können Sie diese zur Beantwortung verwenden.
-        Sie müssen die Suchanfrage nicht erneut starten. Als KI-Sprachmodell, wenn Sie keinen Zugang zu Echtzeitinformationen haben\
-        initiieren Sie eine Suchanfrage.",
-    "duckduckgonews" : "Mit dem duckduckgonews-Plugin können Sie die neuesten Nachrichten aus dem Internet abrufen. Wenn Sie es verwenden möchten, antworten Sie genau mit:\
-        \"[duckduckgonews <query> END]\", wobei query der Text ist, über den du Nachrichten erhalten möchtest. Verwenden Sie den Kontext, um Ihre eigenen Abfragen zu erstellen, falls erforderlich."
+    "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with:\
+      \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve.\
+        Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END]\
+        Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
+        Even if you got the input in a different language, always use english in the wolframalpha query.",
+    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgosearch <query> END]\" where query is the text you want to search for and use context to make your own search queries.\
+         If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
+        No need to initiate search query again. As an AI Language model if you don't have access to real time information\
+        initiate a search query.",
+    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgonews <query> END]\" where query is the text you want to get news about. Use context to make your own queries if necessary."
 }
