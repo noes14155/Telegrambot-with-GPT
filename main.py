@@ -57,8 +57,10 @@ def user_language(user_id=None):
         with open(language_file_path, 'r', encoding='utf-8') as file:
             bot_messages = yaml.safe_load(file)
     else:
-        print(f'{language_file_path} does not exist')
-        exit
+        print(f'{language_file_path} does not exist, Using English')
+        language = 'en'
+        with open(f'language_files/en.yml', 'r', encoding='utf-8') as file:
+            bot_messages = yaml.safe_load(file)
     db.update_settings(user_id, language)
     bot_messages['bot_prompt'] += f"\n\nIt's currently {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
     ###########################
@@ -298,7 +300,7 @@ async def set_commands(user_id):
     await bot.set_my_commands(commands)
 
 async def main():
-    await asyncio.gather(dp.start_polling())
+    await asyncio.gather(set_commands(None),dp.start_polling())
 
 if __name__ == '__main__':
     asyncio.run(main())

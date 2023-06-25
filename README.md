@@ -3,6 +3,7 @@ Simple telegram bot with chatgpt. Aiogram API.
 Hugging face token is only required for image captioning.    
 Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
 If you want to use any other model change HG_img2text value. Change it in the environment variables.               
+Support for multi language. Easy to translate to your own language.        
         
 
 Internet access using [duckduckgo_search](https://github.com/deedy5/duckduckgo_search)
@@ -16,7 +17,14 @@ Support for plugins duckduckgo search and news. Ask for latest news on a topic (
 
 
 Download or clone this repository   
-Change environment variables in .env file. [Environment Variables](#environment-variables)   
+Change environment variables in .env file (create a new .env file or rename the existing example.env). [Environment Variables](#environment-variables)   
+
+Install imaginepy pakcage required for image generation     
+```
+git clone https://github.com/ItsCEED/Imaginepy
+cd Imaginepy
+python setup.py install
+```
 install the requirements(Install takes more time due to openai whisper package and its dependencies)    
 ```
 pip install -r requirements.txt
@@ -26,7 +34,7 @@ Run main.py
 python main.py
 ```
 ## Docker
-Build
+Build (change environment variables before build)
 ```
 docker build -t telegrambot_gpt4free:latest "." 
 ```
@@ -50,3 +58,6 @@ Optional(Required for image captioning). Sign up on hugging face and get the tok
 `HG_img2text`
 Required for image captioning. If you wnat to use another model for image captioning. change it here.   
 Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'     
+
+`DEFAULT_LANG`
+Change to your language currently English and Russian supported. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
