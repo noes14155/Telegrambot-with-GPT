@@ -83,7 +83,7 @@ help: "
 اللغة المراد شرحها كمواطن أصلي هي:
 "
 
-translator_prompt : "
+translator_prompt: "
 سوف تحتاج إلى الرد على المستخدم باللغة الإنجليزية كمواطن أصلي. حتى لو استفسر المستخدم بلغة أخرى ، رد باللغة الإنجليزية فقط. مترجم بالكامل.
 "
 
@@ -94,7 +94,7 @@ voice_prompt: "
 إذا كان النص فارغًا أو مشوهًا ، أجب بعبارة `لم أفهم ذلك`.
 "
 
-document_prompt : "
+document_prompt: "
 النظام: قم بإنشاء استجابة بناءً على محتويات الملف الذي قدمه المستخدم.
 في حالة عدم وجود نص في الملف ، أجب بـ `لم أستطع قراءة ذلك`
 "
@@ -131,17 +131,17 @@ EXTRA_PROMPT: "
 استخدم هذه المكونات الإضافية لتحسين ردودك وتقديم معلومات محدثة للمستخدم
 "
 
-plugins_dict: {
-     "wolframalpha": "يتيح لك المكون الإضافي Wolframalpha إجراء عمليات حسابية. إذا كان ذلك مناسبًا لاستخدامه ، أجب بالضبط بـ: \
-       \ "[WOLFRAMALPHA <query> END] \" حيث الاستعلام هو العملية التي تحتاج إلى حلها. \
-         أمثلة: الإدخال: حل من أجل x: 2x + 3 = 5 الإخراج: [حل WOLFRAMALPHA (2x + 3 = 5) لـ x END] \
-         المدخلات: A * 2 = B حل من أجل B الإخراج: [WOLFRAMALPHA حل (A * 2 = B) لـ B END]. \
-         حتى إذا حصلت على الإدخال بلغة مختلفة ، فاستخدم اللغة الإنجليزية دائمًا في استعلام wolframalpha. "،
-     "duckduckgosearch": "يتيح لك المكون الإضافي Duckduckgosearch البحث في الإنترنت. إذا كان ذلك مناسبًا لاستخدامه ، فأجب بالضبط باستخدام: \
-         \ "[duckduckgosearch <query> END] \" حيث الاستعلام هو النص الذي تريد البحث عنه واستخدام السياق لإنشاء استعلامات البحث الخاصة بك. \
-          إذا لم يتم توجيه رسالة إليك مباشرةً ، فابدأ باستعلام بحث. إذا تم توفير نتائج البحث بواسطة النظام ، فيمكنك استخدامها للإجابة \
-         لا حاجة لبدء استعلام البحث مرة أخرى. كنموذج لغة AI إذا لم يكن لديك وصول إلى المعلومات في الوقت الفعلي \
-         بدء استعلام بحث. "،
-     "duckduckgonews": "يتيح لك المكون الإضافي duckduckgonews الحصول على آخر الأخبار من الإنترنت. إذا كان ذلك مناسبًا لاستخدامه ، أجب بالضبط باستخدام: \
-         \ "[duckduckgonews <query> END] \" حيث الاستعلام هو النص الذي تريد الحصول على أخبار عنه. استخدم السياق لعمل استفساراتك الخاصة إذا لزم الأمر ".
+plugins_dict : {
+    "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with:\
+      \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve.\
+        Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END]\
+        Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
+        Even if you got the input in a different language, always use english in the wolframalpha query.",
+    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgosearch <query> END]\" where query is the text you want to search for and use context to make your own search queries.\
+         If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
+        No need to initiate search query again. As an AI Language model if you don't have access to real time information\
+        initiate a search query.",
+    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. If appropriate to use it answer exactly with:\
+        \"[duckduckgonews <query> END]\" where query is the text you want to get news about. Use context to make your own queries if necessary."
 }
