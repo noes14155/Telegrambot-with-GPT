@@ -97,7 +97,7 @@ async def start_handler(call: types.Message):
     language = available_lang['languages'][lang]
     welcome = bot_messages["start"] + f"{language}."
     search_results = "No search query is needed for a response"
-    text = await bn.generate_response(bot_messages['history_cleared'],'','',history={},prompt=welcome)
+    text = await bn.generate_response(bot_messages['bot_prompt'],'','',history={},prompt=welcome)
     await bot.send_message(call.chat.id,text=text)
     await set_commands(call.from_user.id)
 
