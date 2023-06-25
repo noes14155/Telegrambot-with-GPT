@@ -21,8 +21,8 @@ default_language = os.getenv('DEFAULT_LANGUAGE')
 
 plugin_lang = ''
 
-if os.path.exists('language_files\languages.yml'):
-    with open("language_files\languages.yml", 'r', encoding='utf8') as f:
+if os.path.exists('language_files/languages.yml'):
+    with open("language_files/languages.yml", 'r', encoding='utf8') as f:
         available_lang = yaml.safe_load(f)
 else:
     print('languages.yml does not exist')
