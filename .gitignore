@@ -1,0 +1,4 @@
+.env
+chatbot.db
+bot/__pycache__/
+.vscode/settings.json
