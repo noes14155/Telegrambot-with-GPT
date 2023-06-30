@@ -18,22 +18,24 @@ class botmedia:
         self.HG_img2text = HG_img2text
     async def generate_imagecaption(self, url, HG_TOKEN):
         headers = {"Authorization": f"Bearer {HG_TOKEN}"}
-        max_retries = 3
         retries = 0
-        while True:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url) as resp1, session.post(self.HG_img2text, headers=headers, data=await resp1.read()) as resp2:
-                    response = await resp2.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as resp1:
+                if resp1.status != 200:
+                    return f"Error: failed to download image ({resp1.status})"
+                async with session.post(self.HG_img2text, headers=headers, data=await resp1.read()) as resp2:
                     if resp2.status == 200:
-                        return f"This image looks like a" + response[0]['generated_text']
-                    elif resp2.status >= 500 or 'loading' in response.get('error', '').lower():
+                        response = await resp2.json()
+                        return "This image looks like a " + response[0]['generated_text']
+                    elif resp2.status >= 500 or 'loading' in (await resp2.text()).lower():
                         retries += 1
-                        if retries <= max_retries:
+                        if retries <= 3:
                             await asyncio.sleep(3)
+                            return await self.generate_imagecaption(url,HG_TOKEN)
                         else:
-                            return f"Server error: {await resp2.content.read()}"
+                            return f"Server error: {await resp2.text()}"
                     else:
-                        return f"Error: {response.get('error')}"
+                        return f"Error: {await resp2.text()}"
 
     async def generate_image(self,image_prompt, style_value, ratio_value, negative):
         

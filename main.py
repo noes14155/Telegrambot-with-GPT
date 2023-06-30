@@ -1,6 +1,5 @@
 from aiogram.types import ReplyKeyboardRemove
-from aiogram import Bot, Dispatcher, types, executor
-from aiogram.types import ParseMode,File
+from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -16,7 +15,7 @@ import logging
 load_dotenv()
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 HG_TOKEN = os.getenv('HG_TOKEN')
-HG_img2text = os.getenv('HG_img2text')
+HG_img2text = os.getenv('HG_IMG2TEXT')
 default_language = os.getenv('DEFAULT_LANGUAGE')
 
 plugin_lang = ''
@@ -34,9 +33,9 @@ exit
 
 logging.basicConfig(level=logging.INFO)
 bn = botfn.botfn(available_lang)
-bm = botmedia.botmedia(HG_img2text)
+bm = botmedia.botmedia(HG_img2text=HG_img2text)
 db = botdb.Database('chatbot.db')
-ocr = botocr.OCR(config=" --psm 3 --oem 3 -l script/Devanagari")
+ocr = botocr.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
 db.create_tables()
 storage = MemoryStorage()
 bot = Bot(token=BOT_TOKEN)
