@@ -9,14 +9,14 @@ class LanguageManager:
         self.DEFAULT_LANGUAGE = default_lang
         self.db_connection = database
 
-        if os.path.exists("language_files/languages.yml"):
-            with open("language_files/languages.yml", "r", encoding="utf8") as f:
+        if os.path.exists("./language_files/languages.yml"):
+            with open("./language_files/languages.yml", "r", encoding="utf8") as f:
                 self.available_lang = yaml.safe_load(f)
         else:
             print("languages.yml does not exist")
             exit
 
-        if os.path.exists(f"language_files/{self.DEFAULT_LANGUAGE}.yml"):
+        if os.path.exists(f"./language_files/{self.DEFAULT_LANGUAGE}.yml"):
             with open(
                 f"language_files/{self.DEFAULT_LANGUAGE}.yml", "r", encoding="utf8"
             ) as file:
@@ -38,6 +38,8 @@ class LanguageManager:
     def local_messages(self, user_id):
         if user_id:
             lang = self.db_connection.get_settings(user_id)
+            if lang == None:
+                self.db_connection.insert_settings(user_id, self.DEFAULT_LANGUAGE)
         else:
             lang = self.DEFAULT_LANGUAGE
         language_file_path = f"./language_files/{lang}.yml"
