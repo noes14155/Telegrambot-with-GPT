@@ -1,5 +1,5 @@
 # Telegrambot-with-GPT4free
-Simple telegram bot with chatgpt. Aiogram API.       
+Telegram bot with chatgpt. Aiogram API.       
 Hugging face token is only required for image captioning.    
 Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
 If you want to use any other model change HG_img2text value. Change it in the environment variables.               
@@ -7,7 +7,7 @@ Support for multi language. Easy to translate to your own language.
         
 
 Internet access using [duckduckgo_search](https://github.com/deedy5/duckduckgo_search)
-Supports voice transcription with [openai whisper](https://github.com/openai/whisper)    
+Supports voice transcription with [speec_recognition](https://github.com/Uberi/speech_recognition)    
 Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)
 
        
@@ -19,13 +19,12 @@ Support for plugins duckduckgo search and news. Ask for latest news on a topic (
 Download or clone this repository   
 Change environment variables in .env file (create a new .env file or rename the existing example.env). [Environment Variables](#environment-variables)   
 
-Install imaginepy pakcage required for image generation     
+Install imaginepy package required for image generation     
 ```
-git clone https://github.com/ItsCEED/Imaginepy
-cd Imaginepy
-python setup.py install
+pip install imaginepy
+
 ```
-install the requirements(Install takes more time due to openai whisper package and its dependencies)    
+install the requirements    
 ```
 pip install -r requirements.txt
 ```
