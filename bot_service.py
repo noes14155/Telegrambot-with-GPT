@@ -27,6 +27,7 @@ class BotService:
         self.DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE")
         self.PLUGINS = os.getenv("PLUGINS")
 
+        os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
         self.lm = language_manager.LanguageManager(
             default_lang=self.DEFAULT_LANGUAGE, database=self.db
