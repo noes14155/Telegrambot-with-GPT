@@ -1,7 +1,6 @@
 requests
 aiogram
 aiohttp
-openai-whisper
 pytesseract
 tox
 opencv-python
@@ -16,3 +15,6 @@ python-docx
 openpyxl
 python-pptx
 pyyaml
+imaginepy
+speechrecognition
+pydub
