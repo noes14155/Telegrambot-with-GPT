@@ -16,13 +16,38 @@ Support for plugins duckduckgo search and news. Ask for latest news on a topic (
 ## Install
 
 
-Download or clone this repository   
-Change environment variables in .env file (create a new .env file or rename the existing example.env). [Environment Variables](#environment-variables)   
+Download or clone this repository  
+Go to the directory
+
+```
+cd Telegrambot-with-GPT4free
+```
+
+
+Copy example.env file to .env
+
+```
+cp example.env .env
+```
+
+Change environment variables in .env file [Environment Variables](#environment-variables)   
+
+```
+nano .env
+```
+
+
+Create venv for this project/directory     
+
+```
+python3 -m venv venv
+source venv/bin/activate
+```
+
 
 Install imaginepy package required for image generation     
 ```
 pip install imaginepy
-
 ```
 install the requirements    
 ```
