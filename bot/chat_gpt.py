@@ -32,7 +32,6 @@ class ChatGPT:
                             response_data = await response.json()
                             choices = response_data.get("choices", [])
                             if choices:
-                                print(base_url)
                                 return choices[0]["message"]["content"]
                 except aiohttp.ClientError as error:
                     print(f"Error making the request with {base_url}: {error}")

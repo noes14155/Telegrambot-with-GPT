@@ -1,8 +1,7 @@
-import cv2
-import numpy as np
+from io import BytesIO
 import pytesseract
 import requests
-
+from PIL import Image, ImageEnhance
 
 class OCR:
     def __init__(self, config=None):
@@ -12,17 +11,17 @@ class OCR:
         try:
             # Load the image
             response = requests.get(url)
-            img = cv2.imdecode(
-                np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR
-            )
+            img = Image.open(BytesIO(response.content))
 
             # Preprocess the image for better contrast
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-            gray = clahe.apply(gray)
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(1.5)
+
+            # Convert image to grayscale
+            gray = img.convert('L')
 
             # Apply thresholding to binarize the image
-            _, thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            thresh = gray.point(lambda x: 0 if x < 128 else 255, '1')
 
             # Perform OCR using Tesseract with custom configuration
             text = pytesseract.image_to_string(thresh, config=self.config)
