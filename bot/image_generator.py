@@ -137,16 +137,20 @@ class ImageGenerator:
 
     async def generate_image(self, image_prompt, style_value, ratio_value, negative):
         file_path = "downloaded_files/image.png"
-        imagine = Imagine()
-        img_data = imagine.sdprem(
-            prompt=image_prompt,
-            style=Style[style_value],
-            ratio=Ratio[ratio_value],
-            negative="",
-            cfg=16,
-            model=Model.REALISTIC,
-            asbase64=False,  # default is false, putting it here as presentation.
-        )
+        try:
+            imagine = Imagine()
+            img_data = imagine.sdprem(
+                prompt=image_prompt,
+                style=Style[style_value],
+                ratio=Ratio[ratio_value],
+                negative="",
+                cfg=16,
+                model=Model.REALISTIC,
+                asbase64=False,  # default is false, putting it here as presentation.
+            )
+        except Exception as e:
+            print(f"The server does not respond {e}")
+            return None
 
         if img_data is None:
             print("An error occurred while generating the image.")

@@ -146,15 +146,19 @@ class BotService:
                 photo = open(filename, "rb")
                 markup = ReplyKeyboardRemove()
                 isSuccess = True
+                response = None
             else:
                 markup = ReplyKeyboardRemove()
-                bot_messages["img_error"]
+                response = bot_messages["img_error"]
                 isSuccess = "Error"
+                photo = None
         else:
-            await self.ig.generate_keyboard("ratio")
-            bot_messages["img_ratio"]
+            markup = await self.ig.generate_keyboard("ratio")
+            response = bot_messages["img_ratio"]
             isSuccess = False
-        return photo, isSuccess, markup, filename
+            photo = None
+            filename = None
+        return response, photo, isSuccess, markup, filename
 
     async def chat(self, user_id, user_massage):
         bot_messages = self.lm.local_messages(user_id=user_id)
