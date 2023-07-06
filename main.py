@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import random
-
+from replit_detector import ReplitFlaskApp
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -188,6 +188,9 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    replit_app = ReplitFlaskApp()
+    replit = replit_app.run()
+    if not replit:
+        asyncio.run(main())
 
 service.db.close_connection()

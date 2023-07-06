@@ -11,7 +11,7 @@ from bot import (
     file_transcript,
     image_generator,
     language_manager,
-    orc,
+    ocr,
     voice_transcript,
     web_search,
     yt_transcript,
@@ -38,7 +38,7 @@ class BotService:
         self.ft = file_transcript.FileTranscript()
         self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT)
         self.gpt = chat_gpt.ChatGPT()
-        self.ocr = orc.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
+        self.ocr = ocr.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
         self.db.create_tables()
 
         self.plugins_dict = self.lm.plugin_lang["plugins_dict"]
