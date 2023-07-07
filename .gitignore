@@ -5,3 +5,7 @@ __pycache__/
 downloaded_files/
 .vscode/settings.json
 venv/
+poetry.lock
+pyproject.toml
+replit.nix
+.replit

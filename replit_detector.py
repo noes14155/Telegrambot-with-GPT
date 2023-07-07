@@ -9,7 +9,7 @@ class ReplitFlaskApp:
 
         @self.app.route('/', methods=['GET', 'POST', 'CONNECT', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'TRACE', 'HEAD'])
         def start():
-          return
+          return 'chatbot is running. Access at https://t.me/gp4free_bot'
 
     def run(self):
         if 'REPL_ID' in os.environ and 'REPL_OWNER' in os.environ:
