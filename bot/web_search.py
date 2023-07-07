@@ -66,7 +66,9 @@ class WebSearch:
                     blob += template.format(
                         index=i, snippet=result["snippet"], link=result["link"]
                     )
-                blob += "\nThese are the latest news articles related to the user's query.\n\n"
+                blob += "\nThese are the latest news articles related to the user's query. Provide a summary or analysis of the news articles related to the user's query.\
+                      Respond to the user's query using the information from the provided links.\
+                      Avoid mentioning that you are an AI language model or that you lack access to the latest information.\n\n"
             else:
                 blob = "No search query is needed for a response"
             return blob
@@ -93,7 +95,7 @@ class WebSearch:
             if not extracted_text.strip():
                 extracted_text = None
             driver.quit()
-        response = f"The user has sent a URL.The following is the website contents. Please provide a reply or additional information."
+        response = f"The user has sent a URL.The following is the website contents. Please provide a reply or additional information." + extracted_text
         return response
 
     async def generate_keyboard(self, key):

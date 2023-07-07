@@ -156,7 +156,10 @@ class BotService:
             isSuccess = False
         return photo, isSuccess, markup, filename
 
-    async def chat(self, user_id, user_massage):
+    async def chat(self, call):
+        user_id = call.from_user.id
+        user_message = call.text
+        user = call.from_user
         bot_messages = self.lm.local_messages(user_id=user_id)
         lang = self.db.get_settings
         self.lm.available_lang["languages"].get(
@@ -165,15 +168,17 @@ class BotService:
         )
         rows = self.db.get_history(user_id)[-5:]
         history = []
-        prompt = user_massage
+        prompt = user_message
         for row in rows:
             role, content = row
             history.append({"role": role, "content": content})
         bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
-        web_text = await self.ws.extract_text_from_website(user_massage)
+        if user.first_name is not None:
+            bot_messages["bot_prompt"] += f"And you should address the user as '{user.first_name}'"
+        web_text = await self.ws.extract_text_from_website(user_message)
         if web_text is not None:
             prompt = web_text
-        yt_transcript = await self.yt.get_yt_transcript(user_massage, lang)
+        yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
         if yt_transcript is not None:
             prompt = yt_transcript
         EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
@@ -189,7 +194,7 @@ class BotService:
             text = await self.gpt.generate_response(
                 bot_messages["bot_prompt"], plugin_name, result, history, prompt
             )
-        self.db.insert_history(user_id=user_id, role="user", content=user_massage)
+        self.db.insert_history(user_id=user_id, role="user", content=user_message)
         self.db.insert_history(user_id=user_id, role="assistant", content=text)
 
         return text

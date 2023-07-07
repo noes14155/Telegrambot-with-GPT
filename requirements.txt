@@ -3,7 +3,6 @@ aiogram
 aiohttp
 pytesseract
 tox
-opencv-python
 duckduckgo_search
 python-dotenv
 youtube_transcript_api
