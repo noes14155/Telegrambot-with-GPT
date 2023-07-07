@@ -36,6 +36,11 @@ Change environment variables in .env file [Environment Variables](#environment-v
 nano .env
 ```
 
+Install flac package for voice messages
+
+```
+apt install flac -y
+```
 
 Create venv for this project/directory     
 
