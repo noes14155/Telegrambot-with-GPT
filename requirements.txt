@@ -17,3 +17,4 @@ pyyaml
 imaginepy
 speechrecognition
 pydub
+flask

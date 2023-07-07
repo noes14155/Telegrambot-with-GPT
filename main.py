@@ -2,13 +2,14 @@ import asyncio
 import logging
 import os
 import random
-from replit_detector import ReplitFlaskApp
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 import bot_service
+from replit_detector import ReplitFlaskApp
 
 service = bot_service.BotService()
 storage = MemoryStorage()
@@ -112,14 +113,17 @@ async def select_style_handler(call: types.Message, state: FSMContext):
 @dp.message_handler(state=MyStates.SELECT_RATIO)
 async def select_ratio_image(call: types.Message, state: FSMContext):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    photo, isSuccess, markup, filename = await service.select_ratio(
+    response, photo, isSuccess, markup, filename = await service.select_ratio(
         user_id=call.from_user.id, user_message=call.text, state=state
     )
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    if isSuccess == True:
+    if isSuccess and photo:
         await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
         await bot.send_photo(chat_id=call.chat.id, photo=photo, reply_markup=markup)
+        await bot.send_message(chat_id=call.chat.id, text=response)
         os.remove(filename)
+    else:
+        await bot.send_message(chat_id=call.chat.id, text=response)
     await state.finish()
 
 
