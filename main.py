@@ -23,6 +23,7 @@ class MyStates(StatesGroup):
     SELECT_STYLE = State()
     SELECT_RATIO = State()
     SELECT_LANG = State()
+    SELECT_PERSONA = State()
 
 
 async def create_waiting_message(chat_id):
@@ -60,6 +61,21 @@ async def help_handler(call: types.Message):
     response = await service.help(user_id=call.from_user.id)
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
     await bot.send_message(chat_id=call.chat.id, text=response)
+
+@dp.message_handler(commands=["changepersona"])
+async def persona_handler(call: types.Message):
+    response, markup = await service.changepersona()
+    await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
+    await MyStates.SELECT_PERSONA.set()
+
+@dp.message_handler(state=MyStates.SELECT_PERSONA)
+async def select_persona_handler(call: types.Message, state: FSMContext):
+    response, markup = await service.select_persona(user_id=call.from_user.id,user_message=call.text)
+    if response and markup:
+        await state.finish()
+        await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
+    else:
+        await persona_handler(call)
 
 
 @dp.message_handler(commands=["lang"])
@@ -177,11 +193,15 @@ async def set_commands(user_id):
             command="/lang", description=f"🌐 {bot_messages['lang_description']}"
         ),
         types.BotCommand(
+            command="/changepersona", description=f"👤 Change character of bot"
+        ),
+        types.BotCommand(
             command="/clear", description=f"🧹 {bot_messages['clear_description']}"
         ),
         types.BotCommand(
             command="/help", description=f"ℹ️  {bot_messages['help_description']}"
         ),
+        
     ]
     await bot.delete_my_commands()
     await bot.set_my_commands(commands)

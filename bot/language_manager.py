@@ -37,10 +37,11 @@ class LanguageManager:
 
     def local_messages(self, user_id):
         if user_id:
-            lang = self.db_connection.get_settings(user_id)
+            lang, persona = self.db_connection.get_settings(user_id)
             if lang == None:
-                self.db_connection.insert_settings(user_id, self.DEFAULT_LANGUAGE)
+                self.db_connection.insert_settings(user_id, lang=self.DEFAULT_LANGUAGE)
         else:
+            persona = 'Julie_friend'
             lang = self.DEFAULT_LANGUAGE
         language_file_path = f"./language_files/{lang}.yml"
         if os.path.exists(language_file_path):
@@ -49,8 +50,20 @@ class LanguageManager:
                 bot_messages = yaml.safe_load(file)
         else:
             print(f"{language_file_path} does not exist, Using English")
-            exit
+        personas = {}
+        self.load_personas(personas)
+        if personas[persona]:
+            bot_messages["bot_prompt"] = personas[persona]
         bot_messages[
             "bot_prompt"
-        ] += f"\n\nIt's currently {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
+        ] += f"\n\nWhen replying to the user you should act as the above given persona\nIt's currently {datetime.datetime.now().strftime('%d/%m/%Y %H:%M:%S')}"
         return bot_messages
+    
+    def load_personas(self,personas):
+        for file_name in os.listdir("personas"):
+            if file_name.endswith('.txt'):
+                file_path = os.path.join("personas", file_name)
+                with open(file_path, 'r', encoding='utf-8') as file:
+                    file_content = file.read()
+                    persona = file_name.split('.')[0]
+                    personas[persona] = file_content

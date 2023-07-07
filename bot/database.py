@@ -11,7 +11,9 @@ class Database:
 
     def create_tables(self):
         settings_query = """CREATE TABLE IF NOT EXISTS settings 
-             (user_id INTEGER PRIMARY KEY, lang TEXT)"""
+             (user_id INTEGER PRIMARY KEY, lang TEXT DEFAULT 'en',
+                persona TEXT DEFAULT 'Julie_friend')"""
+        
         history_query = """CREATE TABLE IF NOT EXISTS history 
              (user_id INTEGER, role TEXT, content TEXT)"""
         self.conn.execute(settings_query)
@@ -22,15 +24,15 @@ class Database:
         if self.conn:
             self.conn.close()
 
-    def insert_settings(self, user_id, lang):
-        query = """INSERT OR IGNORE INTO settings (user_id, lang)
-                 VALUES (?, ?)"""
-        self.conn.execute(query, (user_id, lang))
+    def insert_settings(self, user_id, lang='en',persona='Julie_friend'):
+        query = """INSERT OR IGNORE INTO settings (user_id, lang, persona)
+                 VALUES (?, ?, ?)"""
+        self.conn.execute(query, (user_id, lang, persona))
         self.conn.commit()
 
-    def update_settings(self, user_id, lang=None):
-        query = """UPDATE settings SET lang=? WHERE user_id=?"""
-        self.conn.execute(query, (lang, user_id))
+    def update_settings(self, user_id, lang='en',persona='Julie_friend'):
+        query = """UPDATE settings SET lang=?,persona=? WHERE user_id=?"""
+        self.conn.execute(query, (lang, persona, user_id))
         self.conn.commit()
 
     def insert_history(self, user_id, role, content):
@@ -40,13 +42,13 @@ class Database:
         self.conn.commit()
 
     def get_settings(self, user_id):
-        query = """SELECT lang FROM settings WHERE user_id=?"""
+        query = """SELECT lang, persona FROM settings WHERE user_id=?"""
         row = self.conn.execute(query, (user_id,)).fetchone()
         if row:
-            lang = row[0]
-            return lang
+            lang, persona = row
+            return lang, persona
         else:
-            return None
+            return None, None
 
     def get_history(self, user_id):
         query = """SELECT role, content FROM history WHERE user_id=?"""

@@ -1,7 +1,6 @@
-import asyncio
 import os
+from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
-import yaml
 from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
 
@@ -47,6 +46,9 @@ class BotService:
             self.plugins_string += f"\n{plugin}: {self.plugins_dict[plugin]}"
         self.PLUGIN_PROMPT = self.lm.plugin_lang["PLUGIN_PROMPT"] + self.plugins_string
 
+        self.personas = {}
+        
+
     async def start(self, user_id):
         bot_messages = self.lm.local_messages(user_id)
         lang = self.db.get_settings(user_id)
@@ -85,9 +87,9 @@ class BotService:
 
         return response, markup
 
-    async def select_lang(self, user_id, user_massage):
+    async def select_lang(self, user_id, user_message):
         bot_messages = self.lm.local_messages(user_id=user_id)
-        lang_code = user_massage
+        lang_code = user_message
 
         if lang_code in self.lm.available_lang["available_lang"]:
             self.lm.set_language(user_id, lang_code)
@@ -99,27 +101,45 @@ class BotService:
             return response, markup
         else:
             return None, None
-
+    def generate_keyboard(self):
+        markup = ReplyKeyboardMarkup(row_width=5)
+        markup.add(*[KeyboardButton(x) for x in self.personas.keys()])
+        return markup
+    
+    async def changepersona(self): 
+        response = "Select from the available personas"
+        self.lm.load_personas(self.personas)
+        markup = self.generate_keyboard()
+        return response, markup
+    
+    async def select_persona(self,user_id,user_message):
+        if user_message in self.personas.keys():
+            self.db.update_settings(user_id,persona=user_message)
+            response = f'Persona set to {user_message}.'
+            await self.clear(user_id)
+            markup = ReplyKeyboardRemove()
+        else:
+            response = markup = None
+        return response, markup
+        
     async def img(self, user_id):
         bot_messages = self.lm.local_messages(user_id=user_id)
         response = bot_messages["img_prompt"]
-
         return response
 
-    async def select_prompt(self, user_id, user_massage, state):
+    async def select_prompt(self, user_id, user_message, state):
         bot_messages = self.lm.local_messages(user_id=user_id)
         async with state.proxy() as data:
-            data["prompt"] = user_massage
+            data["prompt"] = user_message
         markup = await self.ig.generate_keyboard("style")
         response = bot_messages["img_style"]
-
         return response, markup
 
-    async def select_style(self, user_id, user_massage, state):
+    async def select_style(self, user_id, user_message, state):
         bot_messages = self.lm.local_messages(user_id=user_id)
-        if user_massage in self.ig.STYLE_OPTIONS.keys():
+        if user_message in self.ig.STYLE_OPTIONS.keys():
             async with state.proxy() as data:
-                data["style"] = self.ig.STYLE_OPTIONS[user_massage]
+                data["style"] = self.ig.STYLE_OPTIONS[user_message]
             markup = await self.ig.generate_keyboard("ratio")
             response = bot_messages["img_ratio"]
             isSuccess = True

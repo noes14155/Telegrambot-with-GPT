@@ -13,13 +13,14 @@ Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)
        
 Support for plugins duckduckgo search and news. Ask for latest news on a topic (Under testing).        
 
-## Install
+## Installation Steps
 
 
 Download or clone this repository  
 Go to the directory
 
 ```
+git clone https://github.com/noes14155/Telegrambot-with-GPT4free
 cd Telegrambot-with-GPT4free
 ```
 
@@ -36,13 +37,8 @@ Change environment variables in .env file [Environment Variables](#environment-v
 nano .env
 ```
 
-Install flac package for voice messages
 
-```
-apt install flac -y
-```
-
-Create venv for this project/directory     
+Create virtual environment for this project/directory     
 
 ```
 python3 -m venv venv
@@ -50,15 +46,15 @@ source venv/bin/activate
 ```
 
 
-Install imaginepy package required for image generation     
+Install the requirements    
 ```
-pip install imaginepy
-```
-install the requirements    
-```
+apt install -y flac ffmpeg tesseract-ocr
+wget https://github.com/tesseract-ocr/tessdata_fast/raw/main/script/Devanagari.traineddata -P /usr/share/tesseract-ocr/4.00/tessdata/script/
+EXPORT TESSDATA_PREFIX=/usr/share/tesseract-ocr/4.00/tessdata
+
 pip install -r requirements.txt
 ```
-Run main.py
+Run the bot
 ```
 python main.py
 ```

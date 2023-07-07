@@ -3,7 +3,7 @@ FROM python:3.10
 WORKDIR /app
 ENV PYHTONUNBUFFERED=1
 RUN apt-get update \
- && apt-get install -y --no-install-recommends git ffmpeg tesseract-ocr\
+ && apt-get install -y --no-install-recommends git flac ffmpeg tesseract-ocr\
  && apt-get -y clean \
  && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /usr/share/tesseract-ocr/4.00/tessdata/script/
