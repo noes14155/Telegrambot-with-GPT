@@ -52,7 +52,7 @@ class LanguageManager:
             print(f"{language_file_path} does not exist, Using English")
         personas = {}
         self.load_personas(personas)
-        if personas[persona]:
+        if persona and personas.get(persona):
             bot_messages["bot_prompt"] = personas[persona]
         bot_messages[
             "bot_prompt"
