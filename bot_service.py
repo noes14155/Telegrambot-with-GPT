@@ -52,7 +52,10 @@ class BotService:
     async def start(self, user_id):
         bot_messages = self.lm.local_messages(user_id)
         lang = self.db.get_settings(user_id)
-        language = self.lm.available_lang["languages"][lang]
+        if lang in self.lm.available_lang["languages"]:
+            language = self.lm.available_lang["languages"][lang]
+        else:
+            language = "en"
         welcome = bot_messages["start"] + f"{language}."
         response = await self.gpt.generate_response(
             bot_messages["bot_prompt"], "", "", history={}, prompt=welcome
