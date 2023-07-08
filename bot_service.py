@@ -55,7 +55,7 @@ class BotService:
         if lang in self.lm.available_lang["languages"]:
             language = self.lm.available_lang["languages"][lang]
         else:
-            language = "en"
+            language = self.DEFAULT_LANGUAGE
         welcome = bot_messages["start"] + f"{language}."
         response = await self.gpt.generate_response(
             bot_messages["bot_prompt"], "", "", history={}, prompt=welcome
