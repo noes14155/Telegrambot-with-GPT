@@ -1,20 +1,22 @@
-# Telegrambot-with-GPT4free
-Telegram bot with chatgpt. Aiogram API.       
-Hugging face token is only required for image captioning.    
-Support OCR with tesseract additional to [salesforce blip image captioning](https://huggingface.co/Salesforce/blip-image-captioning-large)    
-If you want to use any other model change HG_img2text value. Change it in the environment variables.               
-Support for multi language. Easy to translate to your own language.        
+## Telegrambot-with-GPT4free
+🤖 A Telegram bot powered by ChatGPT using the Aiogram API.       
+
+ℹ️ Note: The Hugging Face token is only required for image captioning.      
+
+✨ Features:           
+  
+- Supports OCR with Tesseract in addition to [salesforce blip image captioning.](https://huggingface.co/Salesforce/blip-image-captioning-large)
+- Easy to translate to your own language with multi-language support.
+- Internet access using  [duckduckgo_search.](https://github.com/deedy5/duckduckgo_search)
+- Supports voice transcription with [speech_recognition](https://github.com/Uberi/speech_recognition)
+- Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)
+- Plugin support for DuckDuckGo search and news (under testing).    
         
-
-Internet access using [duckduckgo_search](https://github.com/deedy5/duckduckgo_search)
-Supports voice transcription with [speec_recognition](https://github.com/Uberi/speech_recognition)    
-Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)
-
        
-Support for plugins duckduckgo search and news. Ask for latest news on a topic (Under testing).        
 
 ## Installation Steps
 
+### Linux    
 
 Download or clone this repository  
 Go to the directory
@@ -58,13 +60,52 @@ Run the bot
 ```
 python main.py
 ```
+
+### Windows    
+
+1. Download or clone this repository:    
+```
+git clone https://github.com/noes14155/Telegrambot-with-GPT4free
+cd Telegrambot-with-GPT4free
+```
+
+2. Copy the example.env file to .env
+3. Change the environment variables in the .env file using a text editor of your choice.
+
+4. Create a virtual environment for this project/directory:
+
+```
+python -m venv venv
+venv\Scripts\activate
+```
+
+5. Install the required dependencies:    
+```
+pip install -r requirements.txt
+```
+6. Install additional dependencies:
+
++ Install Tesseract OCR:
+    - Download the Windows installer from the  [Tesseract OCR GitHub page](https://github.com/UB-Mannheim/tesseract/wiki).
+    - Run the installer and make sure to check download Additional script data option in the installation options.
+    - Add the Tesseract installation directory to the system's PATH environment variable.
++ Install FFmpeg:
+
+    - Download the latest static build of FFmpeg for Windows from the  [official FFmpeg website](https://ffmpeg.org/download.html#build-windows).
+    - Extract the downloaded ZIP file to a location of your choice.
+    - Add the FFmpeg bin directory to the system's PATH environment variable.
+7. Run the bot:
+```
+python main.py
+```
+
 ## Docker
 Build (change environment variables before build)
-```
+```bash
 docker build -t telegrambot_gpt4free:latest "." 
 ```
 Docker-compose
-```
+```bash
 docker-compose up --build -d
 ```
 
@@ -74,15 +115,17 @@ docker-compose up --build -d
 
 To run this project, you will need to create a .env file or rename the existing example.env to .env and add the following environment variables   
 
-`BOT_TOKEN`
-Get this by messaging @botfather Refer to https://core.telegram.org/bots/tutorial#obtain-your-bot-token
+- `BOT_TOKEN`
+Get this by messaging @botfather Refer to [📖 Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
 
-`HG_TOKEN`
-Optional(Required for image captioning). Sign up on hugging face and get the token from [here](https://huggingface.co/settings/tokens)      
+- `HG_TOKEN`
+Optional(Required for image captioning). Sign up on hugging face and get the token from  [🔗 Hugging Face](https://huggingface.co/settings/tokens).      
       
-`HG_img2text`
+- `HG_img2text`
 Required for image captioning. If you wnat to use another model for image captioning. change it here.   
 Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'     
 
-`DEFAULT_LANG`
+- `DEFAULT_LANG`
 Change to your language currently English and Russian supported. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
+
+🎉 You're all set! Enjoy using the Telegram bot with ChatGPT!
