@@ -3,6 +3,8 @@
 
 ℹ️ Note: The Hugging Face token is only required for image captioning.      
 
+### Image generation is currentky not working as imaginepy API is down. I am looking for an aternative. Open to suggestions.        
+
 ✨ Features:           
   
 - Supports OCR with Tesseract in addition to [salesforce blip image captioning.](https://huggingface.co/Salesforce/blip-image-captioning-large)
