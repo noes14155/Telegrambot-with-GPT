@@ -2,7 +2,6 @@ import random
 
 import aiohttp
 
-
 class ChatGPT:
     async def generate_response(
         self, instruction, plugin_name, plugin_result, history, prompt

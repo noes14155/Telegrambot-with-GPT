@@ -88,7 +88,7 @@ async def lang_handler(call: types.Message):
 @dp.message_handler(state=MyStates.SELECT_LANG)
 async def select_lang_handler(call: types.Message, state: FSMContext):
     response, markup = await service.select_lang(
-        user_id=call.from_user.id, user_massage=call.text[-3:-1]
+        user_id=call.from_user.id, user_message=call.text[-3:-1]
     )
     if response and markup:
         await call.answer(text=response, reply_markup=markup)
@@ -108,7 +108,7 @@ async def img_handler(call: types.Message):
 @dp.message_handler(state=MyStates.SELECT_PROMPT)
 async def select_prompt_handler(call: types.Message, state: FSMContext):
     response, markup = await service.select_prompt(
-        user_id=call.from_user.id, user_massage=call.text, state=state
+        user_id=call.from_user.id, user_message=call.text, state=state
     )
     await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
     await MyStates.next()
@@ -117,7 +117,7 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
 @dp.message_handler(state=MyStates.SELECT_STYLE)
 async def select_style_handler(call: types.Message, state: FSMContext):
     response, markup, isSuccess = await service.select_style(
-        user_id=call.from_user.id, user_massage=call.text, state=state
+        user_id=call.from_user.id, user_message=call.text, state=state
     )
     await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
     if isSuccess == False:

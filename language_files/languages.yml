@@ -1,4 +1,4 @@
-available_lang: ["en","jp","zh","de","fr","ru","es","ar","tl"]
+available_lang: ["en","jp","zh","de","fr","ru","es","ar","tl","id"]
 languages:
   en: English 🇬🇧
   jp: 日本語 🇯🇵
@@ -9,3 +9,4 @@ languages:
   es: Español 🇪🇸
   ar: العربية 🇦🇪
   tl: Tagalog 🇵🇭
+  id: Bahasa Indonesia 🇮🇩
