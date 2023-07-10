@@ -1,14 +1,24 @@
 import asyncio
-
 import aiohttp
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from imaginepy import Imagine
 from imaginepy.constants import *
+import time
+import gradio as gr
+from gradio_client import Client
+
+import threading
+
 
 
 class ImageGenerator:
     def __init__(self, HG_IMG2TEXT):
         self.HG_IMG2TEXT = HG_IMG2TEXT
+        def load_gradio():
+            gr.load("models/stabilityai/stable-diffusion-2-1").launch()
+
+        gradio_thread = threading.Thread(target=load_gradio)
+        gradio_thread.start()
         self.STYLE_OPTIONS = {
             "No Style": "NO_STYLE",
             "Euphoric": "EUPHORIC",
@@ -107,7 +117,7 @@ class ImageGenerator:
             "3:1": "RATIO_3X1",
             "3:4": "RATIO_3X4",
         }
-
+    
     async def generate_imagecaption(self, url, HG_TOKEN):
         headers = {"Authorization": f"Bearer {HG_TOKEN}"}
         retries = 0
@@ -135,41 +145,46 @@ class ImageGenerator:
                     else:
                         return f"Error: {await resp2.text()}"
 
-    async def generate_image(self, image_prompt, style_value, ratio_value, negative):
-        file_path = "downloaded_files/image.png"
-        try:
-            imagine = Imagine()
-            img_data = imagine.sdprem(
-                prompt=image_prompt,
-                style=Style[style_value],
-                ratio=Ratio[ratio_value],
-                negative="",
-                cfg=16,
-                model=Model.REALISTIC,
-                asbase64=False,  # default is false, putting it here as presentation.
-            )
-        except Exception as e:
-            print(f"The server does not respond {e}")
-            return None
-
-        if img_data is None:
-            print("An error occurred while generating the image.")
-            return
-
-        # img_data = imagine.upscale(img_data) too big for a photo
-
-        if img_data is None:
-            print("An error occurred while upscaling the image.")
-            return
-
-        try:
-            with open(file_path, mode="wb") as img_file:
-                img_file.write(img_data)
-                img_file.close()
-        except Exception as e:
-            print(f"An error occurred while writing the image to file: {e}")
-        return file_path
-
+    #async def generate_image(self, image_prompt, style_value, ratio_value, negative):
+    #    file_path = "downloaded_files/image.png"
+    #    try:
+    #        imagine = Imagine()
+    #        img_data = imagine.sdprem(
+    #            prompt=image_prompt,
+    #            style=Style[style_value],
+    #            ratio=Ratio[ratio_value],
+    #            negative="",
+    #            cfg=16,
+    #            model=Model.REALISTIC,
+    #            asbase64=False,  # default is false, putting it here as presentation.
+    #        )
+    #    except Exception as e:
+    #        print(f"The server does not respond {e}")
+    #        return None
+#
+    #    if img_data is None:
+    #        print("An error occurred while generating the image.")
+    #        return
+#
+    #    # img_data = imagine.upscale(img_data) too big for a photo
+#
+    #    if img_data is None:
+    #        print("An error occurred while upscaling the image.")
+    #        return
+#
+    #    try:
+    #        with open(file_path, mode="wb") as img_file:
+    #            img_file.write(img_data)
+    #            img_file.close()
+    #    except Exception as e:
+    #        print(f"An error occurred while writing the image to file: {e}")
+    #    return file_path
+#
+    async def generate_image(prompt):
+        client = Client("http://127.0.0.1:7860/")
+        text = client.predict(prompt, api_name="/predict")
+        return text
+    
     async def generate_keyboard(self, key):
         markup = ReplyKeyboardMarkup(row_width=5)
         if key == "ratio":

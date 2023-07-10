@@ -107,11 +107,17 @@ async def img_handler(call: types.Message):
 
 @dp.message_handler(state=MyStates.SELECT_PROMPT)
 async def select_prompt_handler(call: types.Message, state: FSMContext):
-    response, markup = await service.select_prompt(
+    waiting_id = await create_waiting_message(chat_id=call.chat.id)
+    filename = await service.select_prompt(
         user_id=call.from_user.id, user_message=call.text, state=state
     )
-    await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
-    await MyStates.next()
+    await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
+    await bot.send_photo(chat_id=call.chat.id, photo=filename)
+    #await bot.send_message(chat_id=call.chat.id, text='Image Generated')
+    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
+    #os.remove(filename)
+    #await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
+    await state.finish()
 
 
 @dp.message_handler(state=MyStates.SELECT_STYLE)
