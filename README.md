@@ -11,7 +11,8 @@
 - Easy to translate to your own language with multi-language support.
 - Internet access using  [duckduckgo_search.](https://github.com/deedy5/duckduckgo_search)
 - Supports voice transcription with [speech_recognition](https://github.com/Uberi/speech_recognition)
-- Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)
+~~- Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)~~
+- Image generation using Stability Diffusion     
 - Plugin support for DuckDuckGo search and news (under testing).    
         
        

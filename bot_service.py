@@ -3,6 +3,7 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
+from gradio_client import Client
 
 from bot import (
     chat_gpt,
@@ -132,11 +133,15 @@ class BotService:
 
     async def select_prompt(self, user_id, user_message, state):
         bot_messages = self.lm.local_messages(user_id=user_id)
-        async with state.proxy() as data:
-            data["prompt"] = user_message
-        markup = await self.ig.generate_keyboard("style")
-        response = bot_messages["img_style"]
-        return response, markup
+        #async with state.proxy() as data:
+        #    data["prompt"] = user_message
+        #markup = await self.ig.generate_keyboard("style")
+        #response = bot_messages["img_style"]
+        client = Client("http://127.0.0.1:7860/")
+        filename = client.predict(user_message, api_name="/predict")
+        if filename:
+                photo = open(filename, "rb")
+        return photo
 
     async def select_style(self, user_id, user_message, state):
         bot_messages = self.lm.local_messages(user_id=user_id)
