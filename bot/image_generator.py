@@ -15,7 +15,7 @@ class ImageGenerator:
     def __init__(self, HG_IMG2TEXT):
         self.HG_IMG2TEXT = HG_IMG2TEXT
         def load_gradio():
-            gr.load("models/stabilityai/stable-diffusion-2-1").launch()
+            gr.load("models/stabilityai/stable-diffusion-2-1").launch(server_port=7860)
 
         gradio_thread = threading.Thread(target=load_gradio)
         gradio_thread.start()
@@ -182,7 +182,7 @@ class ImageGenerator:
 #
     async def generate_image(prompt):
         client = Client("http://127.0.0.1:7860/")
-        text = client.predict(prompt, api_name="/predict")
+        text = client.predict(prompt, api_name="/predict" )
         return text
     
     async def generate_keyboard(self, key):

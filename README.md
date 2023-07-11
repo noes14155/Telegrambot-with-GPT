@@ -131,4 +131,9 @@ Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesfo
 - `DEFAULT_LANG`
 Change to your language currently English and Russian supported. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
 
-🎉 You're all set! Enjoy using the Telegram bot with ChatGPT!
+🎉 You're all set! Enjoy using the Telegram bot with ChatGPT!        
+
+
+<a href = "https://github.com/noes14155/Telegrambot-with-GPT4free/graphs/contributors">
+  <img src = "https://contrib.rocks/image?repo = noes14155/Telegrambot-with-GPT4free"/>
+</a>
