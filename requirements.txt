@@ -20,5 +20,3 @@ imaginepy
 speechrecognition
 pydub
 flask
-gradio_client
-gradio
