@@ -135,5 +135,5 @@ Change to your language currently English and Russian supported. If you want to 
 
 
 <a href = "https://github.com/noes14155/Telegrambot-with-GPT4free/graphs/contributors">
-  <img src = "https://contrib.rocks/image?repo = noes14155/Telegrambot-with-GPT4free"/>
+  <img src = "https://contrib.rocks/image?repo=noes14155/Telegrambot-with-GPT4free"/>
 </a>
