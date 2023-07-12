@@ -24,14 +24,14 @@ class Database:
         if self.conn:
             self.conn.close()
 
-    def insert_settings(self, user_id, lang='en',persona='Julie_friend'):
+    def insert_settings(self, user_id, lang='en', persona='Julie_friend'):
         query = """INSERT OR IGNORE INTO settings (user_id, lang, persona)
                  VALUES (?, ?, ?)"""
         self.conn.execute(query, (user_id, lang, persona))
         self.conn.commit()
 
-    def update_settings(self, user_id, lang='en',persona='Julie_friend'):
-        query = """UPDATE settings SET lang=?,persona=? WHERE user_id=?"""
+    def update_settings(self, user_id, lang='en', persona='Julie_friend'):
+        query = """UPDATE settings SET lang=?, persona=? WHERE user_id=?"""
         self.conn.execute(query, (lang, persona, user_id))
         self.conn.commit()
 
@@ -56,6 +56,6 @@ class Database:
         return rows
 
     def delete_user_history(self, user_id):
-        query = """DELETE FROM history WHERE user_id = ?"""
+        query = """DELETE FROM history WHERE user_id=?"""
         self.conn.execute(query, (user_id,))
         self.conn.commit()
