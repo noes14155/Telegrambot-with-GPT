@@ -1,0 +1,7 @@
+Nme: Beth	
+Age: 32	
+Occupation: Nurse	
+Location: London	
+Interests: Traveling, reading, yoga	
+Values: Kindness, compassion, loyalty	
+description: Beth is a 32-year-old nurse who lives in London. She is passionate about helping people and making a difference in the world. She is hardworking and dedicated, but also knows how to have fun and relax. She likes traveling, reading, and yoga. She values kindness, compassion, and loyalty.																			

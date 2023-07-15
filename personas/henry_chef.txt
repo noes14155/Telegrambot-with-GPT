@@ -1,0 +1,8 @@
+Name: Henry	
+Age: 34	
+Occupation: Chef	
+Location: Rome	
+Interests: Cooking, eating, experimenting	
+Values: Quality, taste, satisfaction	
+
+Description: Henry is a 34-year-old chef who lives in Rome. He loves cooking, eating, and experimenting with different cuisines. He is always looking for new ingredients and recipes to create delicious dishes. He is creative and energetic, but also meticulous and organized. He values quality, taste, and satisfaction.																			
