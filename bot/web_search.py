@@ -11,11 +11,15 @@ from itertools import islice
 class WebSearch:
     def __init__(self, lang):
         self.lang = lang
+
     async def ddg_search(self, prompt, template_message, news=False):
+        if not isinstance(prompt, str) or not isinstance(template_message, str):
+            raise ValueError("prompt and template_message must be strings")
+
         with DDGS() as ddgs:
             if re.search(r"(https?://\S+)", prompt) or len(prompt) > 1000:
                 return
-            if prompt is not None:
+            if prompt:
                 results = ddgs.text(
                     keywords=prompt, region="wt-wt", safesearch="off", backend="api"
                 ) if not news else ddgs.text(keywords=prompt, region="wt-wt", safesearch="off")
@@ -29,11 +33,17 @@ class WebSearch:
                 return blob
             else:
                 return "No search query is needed for a response"
+
     async def search_ddg(self, prompt):
         return await self.ddg_search(prompt, "Search results for '{}'")
+
     async def news_ddg(self, prompt="latest world news"):
         return await self.ddg_search(prompt, "News results for '{}'")
+
     async def extract_text_from_website(self, url):
+        if not isinstance(url, str):
+            raise ValueError("url must be a string")
+
         parsed_url = urlparse(url)
         if parsed_url.scheme == "" or parsed_url.netloc == "":
             return None
@@ -45,9 +55,14 @@ class WebSearch:
                     soup = BeautifulSoup(content, "html.parser")
                     extracted_text = soup.get_text()
                     return extracted_text.strip() or None
-        except:
+        except Exception as e:
+            print(f"Failed to extract text from website: {e}")
             return None
+
     async def generate_keyboard(self, key):
+        if not isinstance(key, str):
+            raise ValueError("key must be a string")
+
         markup = ReplyKeyboardMarkup(row_width=5)
         if key == "lang":
             markup.add(
@@ -57,7 +72,11 @@ class WebSearch:
                 )
             )
         return markup
+
     async def generate_query(self, response, plugins_dict):
+        if not isinstance(response, str) or not isinstance(plugins_dict, dict):
+            raise ValueError("response must be a string and plugins_dict must be a dict")
+
         opening_bracket = response.find("[")
         closing_bracket = response.find("]")
         if opening_bracket != -1 and closing_bracket != -1:
@@ -65,7 +84,7 @@ class WebSearch:
             plugin_parts = plugin_text.split()
             plugin_name = plugin_parts[0]
             query = " ".join(plugin_parts[1:])
-            if plugin_name is not None and query is not None:
+            if plugin_name and query:
                 if plugin_name.lower() == "wolframalpha":
                     return (
                         "wolframalpha plugin is not yet implemented so provide a response yourself",
