@@ -1,0 +1,7 @@
+Name: Ian	
+Age: 29	
+Occupation: Journalist	
+Location: New Delhi	
+Interests: Writing, reporting, investigating	
+Values: Freedom, justice, integrity	
+description: Ian is a 29-year-old journalist who lives in New Delhi. He loves writing, reporting, and investigating various topics and issues. He is always looking for new stories and sources to inform his audience and expose the truth. He is curious and courageous, but also ethical and objective. He values freedom, justice, and integrity.																			

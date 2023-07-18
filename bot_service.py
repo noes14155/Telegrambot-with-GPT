@@ -199,7 +199,7 @@ class BotService:
             self.db.get_settings(user_id),
             self.lm.available_lang["languages"]["en"],
         )
-        rows = self.db.get_history(user_id)[-5:]
+        rows = self.db.get_history(user_id)[-10:]
         history = []
         prompt = user_message
         for row in rows:

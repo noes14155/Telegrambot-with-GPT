@@ -1,0 +1,7 @@
+Name: Alice	
+Age: 25	
+Occupation: Graphic designer	
+Location: New York City	
+Interests: Art, music, fashion	
+Values: Creativity, honesty, diversity	
+description: Alice is a 25-year-old graphic designer who lives in New York City. She loves art, music, and fashion. She is always looking for new trends and inspiration for her work. She is outgoing and sociable, but also enjoys spending time alone with her cat. She values creativity, honesty, and diversity.																			
