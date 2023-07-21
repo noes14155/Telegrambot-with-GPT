@@ -4,9 +4,11 @@ import os
 import random
 
 from aiogram import Bot, Dispatcher, types
+from aiogram.types import ChatType
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
+from functools import wraps
 
 import bot_service
 from replit_detector import ReplitFlaskApp
@@ -14,9 +16,10 @@ from replit_detector import ReplitFlaskApp
 service = bot_service.BotService()
 storage = MemoryStorage()
 bot = Bot(token=service.BOT_TOKEN)
+owner_id = service.BOT_OWNER_ID
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
-
+dm_enabled = True
 
 class MyStates(StatesGroup):
     SELECT_PROMPT = State()
@@ -25,6 +28,14 @@ class MyStates(StatesGroup):
     SELECT_LANG = State()
     SELECT_PERSONA = State()
 
+def owner_only(func):
+    @wraps(func)
+    async def wrapped(update, context, *args, **kwargs):
+        if update.message.from_user.id != owner_id:
+            await update.message.reply("Only the bot owner can use this command!")
+            return
+        return await func(update, context, *args, **kwargs)
+    return wrapped
 
 async def create_waiting_message(chat_id):
     bot_messages = service.lm.local_messages(user_id=chat_id)
@@ -104,7 +115,16 @@ async def img_handler(call: types.Message):
     await bot.send_message(call.chat.id, text=response)
     await MyStates.SELECT_PROMPT.set()
 
-
+@owner_only
+@dp.message_handler(commands=['toggledm'])
+async def toggle_dm(message: types.Message):
+    if message.from_user.id != owner_id:
+        await message.reply("Sorry, only the bot owner can use this command.")
+        return
+    global dm_enabled 
+    dm_enabled = not dm_enabled
+    await message.reply(f"Direct messages are now {'enabled' if dm_enabled else 'disabled'}")
+        
 @dp.message_handler(state=MyStates.SELECT_PROMPT)
 async def select_prompt_handler(call: types.Message, state: FSMContext):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
@@ -151,6 +171,9 @@ async def select_ratio_image(call: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=["text"])
 async def chat_handler(call: types.Message):
+    if not dm_enabled and call.chat.type == ChatType.PRIVATE:
+        await call.reply("Direct messages are disabled by bot owner")
+        return
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response = await service.chat(call=call)
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
@@ -206,6 +229,9 @@ async def set_commands(user_id):
         ),
         types.BotCommand(
             command="/help", description=f"ℹ️  {bot_messages['help_description']}"
+        ),
+        types.BotCommand(
+            command="/toggledm", description=f"Toggle Direct Message"
         ),
         
     ]

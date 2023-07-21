@@ -22,6 +22,7 @@ class BotService:
     def __init__(self):
         load_dotenv()
         self.BOT_TOKEN = os.getenv("BOT_TOKEN")
+        self.BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
         self.HG_TOKEN = os.getenv("HG_TOKEN")
         self.HG_IMG2TEXT = os.getenv("HG_IMG2TEXT")
         self.DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE")
