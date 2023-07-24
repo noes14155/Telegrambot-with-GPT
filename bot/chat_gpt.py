@@ -1,11 +1,13 @@
 import random
-
+import bot.deepai as ai
 import aiohttp
+import asyncio
 
 class ChatGPT:
     async def generate_response(
         self, instruction, plugin_name, plugin_result, history, prompt
     ):
+        
         base_urls = ["https://gpt4.xunika.uk/"]
         arguments = "/api/openai/v1/chat/completions"
         headers = {"Content-Type": "application/json"}

@@ -121,8 +121,17 @@ Generate a response based on the context of an image, even if the image itself i
 # EXTRA
 PLUGIN_PROMPT: "
 You will be given a list of plugins with description.
-                Based on what the plugin's description says, if you think a plugin is appropriate to use,
-                answer with the instructions to use it. If no plugin is needed, do not mention them.
+                Given a list of plugins with descriptions, determine which plugins to use based on their descriptions.
+                If no plugins are required to answer like the user is trying to have a conversation. Answer with Plugin: False and nothing else.
+                You will provide only the output in the exact format specified below with no explanation or conversation.
+                Ifyou need to use a plugin specify which plugin to use and Query.
+                Example input: What are the latest news in the tech world
+
+                Example output:
+                Plugin: duckduckgonews
+                Query: tech news
+
+                
                 The available plugins are: 
 "
 
@@ -132,16 +141,10 @@ Use these plugins to enhance your responses and provide up-to-date information t
 "
 
 plugins_dict : {
-    "wolframalpha": "Wolframalpha plugin lets you perform math operations. If appropriate to use it, answer exactly with:\
-      \"[WOLFRAMALPHA <query> END]\" where query is the operation you need to solve.\
-        Examples: Input: Solve for x: 2x+3=5 Output: [WOLFRAMALPHA solve (2x+3=5) for x END]\
-        Input: A*2=B solve for B Output: [WOLFRAMALPHA solve (A*2=B) for B END].\
-        Even if you got the input in a different language, always use english in the wolframalpha query.",
-    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. If appropriate to use it answer exactly with:\
-        \"[duckduckgosearch <query> END]\" where query is the text you want to search for and use context to make your own search queries.\
+    "wolframalpha": "Wolframalpha plugin lets you perform math operations. Query is the math problem you need to solve." ,
+    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. Query is the text you want to search for and use context to make your own search queries.\
          If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
         No need to initiate search query again. As an AI Language model if you don't have access to real time information\
         initiate a search query.",
-    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. If appropriate to use it answer exactly with:\
-        \"[duckduckgonews <query> END]\" where query is the text you want to get news about. Use context to make your own queries if necessary."
+    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. Query is the text you want to get news about. Use context to make your own queries if necessary."
 }

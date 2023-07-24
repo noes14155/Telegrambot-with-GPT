@@ -16,7 +16,8 @@ python-pptx
 pyyaml
 gradio
 gradio_client
-imaginepy
 speechrecognition
+wolframalpha
+wikipedia
 pydub
 flask

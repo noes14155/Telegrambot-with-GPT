@@ -1,6 +1,5 @@
 import os
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
-
 from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
 from gradio_client import Client
@@ -134,61 +133,13 @@ class BotService:
 
     async def select_prompt(self, user_id, user_message, state):
         bot_messages = self.lm.local_messages(user_id=user_id)
-        #async with state.proxy() as data:
-        #    data["prompt"] = user_message
-        #markup = await self.ig.generate_keyboard("style")
-        #response = bot_messages["img_style"]
         client = Client("http://127.0.0.1:7860/")
         filename = client.predict(user_message, api_name="/predict")
         if filename:
                 photo = open(filename, "rb")
         return photo
 
-    async def select_style(self, user_id, user_message, state):
-        bot_messages = self.lm.local_messages(user_id=user_id)
-        if user_message in self.ig.STYLE_OPTIONS.keys():
-            async with state.proxy() as data:
-                data["style"] = self.ig.STYLE_OPTIONS[user_message]
-            markup = await self.ig.generate_keyboard("ratio")
-            response = bot_messages["img_ratio"]
-            isSuccess = True
-        else:
-            markup = await self.ig.generate_keyboard("style")
-            isSuccess = False
-
-        return response, markup, isSuccess
-
-    async def select_ratio(self, user_id, user_message, state):
-        bot_messages = self.lm.local_messages(user_id=user_id)
-        if user_message in self.ig.RATIO_OPTIONS.keys():
-            data = await state.get_data()
-            prompt = data["prompt"]
-            style = data["style"]
-            ratio = self.ig.RATIO_OPTIONS[user_message]
-            filename = await self.ig.generate_image(
-                image_prompt=prompt,
-                style_value=style,
-                ratio_value=ratio,
-                negative="",
-            )
-            if filename:
-                photo = open(filename, "rb")
-                markup = ReplyKeyboardRemove()
-                isSuccess = True
-                response = None
-            else:
-                markup = ReplyKeyboardRemove()
-                response = bot_messages["img_error"]
-                isSuccess = "Error"
-                photo = None
-        else:
-            markup = await self.ig.generate_keyboard("ratio")
-            response = bot_messages["img_ratio"]
-            isSuccess = False
-            photo = None
-            filename = None
-        return response, photo, isSuccess, markup, filename
-
+    
     async def chat(self, call):
         user_id = call.from_user.id
         user_message = call.text
@@ -221,8 +172,8 @@ class BotService:
         result, plugin_name = await self.ws.generate_query(text, self.plugins_dict)
         if result is None and plugin_name is None:
             text = await self.gpt.generate_response(
-                bot_messages["bot_prompt"], "", "", history, prompt
-            )
+                    bot_messages["bot_prompt"], "", "", history, prompt
+                )
         else:
             text = await self.gpt.generate_response(
                 bot_messages["bot_prompt"], plugin_name, result, history, prompt

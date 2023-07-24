@@ -133,41 +133,9 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
     )
     await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
     await bot.send_photo(chat_id=call.chat.id, photo=filename)
-    #await bot.send_message(chat_id=call.chat.id, text='Image Generated')
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    #os.remove(filename)
-    #await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
+    os.remove(filename)
     await state.finish()
-
-
-@dp.message_handler(state=MyStates.SELECT_STYLE)
-async def select_style_handler(call: types.Message, state: FSMContext):
-    response, markup, isSuccess = await service.select_style(
-        user_id=call.from_user.id, user_message=call.text, state=state
-    )
-    await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
-    if isSuccess == False:
-        await MyStates.SELECT_STYLE.set()
-    else:
-        await MyStates.SELECT_RATIO.set()
-
-
-@dp.message_handler(state=MyStates.SELECT_RATIO)
-async def select_ratio_image(call: types.Message, state: FSMContext):
-    waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response, photo, isSuccess, markup, filename = await service.select_ratio(
-        user_id=call.from_user.id, user_message=call.text, state=state
-    )
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    if isSuccess and photo:
-        await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
-        await bot.send_photo(chat_id=call.chat.id, photo=photo, reply_markup=markup)
-        await bot.send_message(chat_id=call.chat.id, text=response)
-        os.remove(filename)
-    else:
-        await bot.send_message(chat_id=call.chat.id, text=response)
-    await state.finish()
-
 
 @dp.message_handler(content_types=["text"])
 async def chat_handler(call: types.Message):
