@@ -21,11 +21,24 @@ class BotService:
     def __init__(self):
         load_dotenv()
         self.BOT_TOKEN = os.getenv("BOT_TOKEN")
-        self.BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
         self.HG_TOKEN = os.getenv("HG_TOKEN")
-        self.HG_IMG2TEXT = os.getenv("HG_IMG2TEXT")
-        self.DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE")
-        self.PLUGINS = os.getenv("PLUGINS")
+        try:
+            self.BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
+        except:
+            self.BOT_OWNER_ID = ''
+            print('Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
+        try:
+            self.HG_IMG2TEXT = os.getenv("HG_IMG2TEXT")
+        except:
+            self.HG_IMG2TEXT = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
+        try:
+            self.DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE")
+        except:
+            self.DEFAULT_LANGUAGE = 'en'
+        try:
+            self.PLUGINS = os.getenv("PLUGINS")
+        except:
+            self.PLUGINS = True
 
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")

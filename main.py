@@ -198,11 +198,13 @@ async def set_commands(user_id):
         types.BotCommand(
             command="/help", description=f"ℹ️  {bot_messages['help_description']}"
         ),
-        types.BotCommand(
-            command="/toggledm", description=f"Toggle Direct Message"
-        ),
-        
+              
     ]
+    if service.BOT_OWNER_ID != '':
+        commands.append(types.BotCommand(
+            command="/toggledm", description=f"Toggle Direct Message"
+        ))
+
     await bot.delete_my_commands()
     await bot.set_my_commands(commands)
 
