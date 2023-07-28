@@ -118,7 +118,7 @@ async def img_handler(call: types.Message):
 @owner_only
 @dp.message_handler(commands=['toggledm'])
 async def toggle_dm(message: types.Message):
-    if message.from_user.id != owner_id:
+    if message.from_user.username != owner_id:
         await message.reply("Sorry, only the bot owner can use this command.")
         return
     global dm_enabled 
@@ -139,6 +139,7 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
 
 @dp.message_handler(content_types=["text"])
 async def chat_handler(call: types.Message):
+    
     if not dm_enabled and call.chat.type == ChatType.PRIVATE:
         await call.reply("Direct messages are disabled by bot owner")
         return
@@ -204,7 +205,10 @@ async def set_commands(user_id):
         commands.append(types.BotCommand(
             command="/toggledm", description=f"Toggle Direct Message"
         ))
-
+    if service.CHIMERAGPT_KEY != None:
+        commands.append(types.BotCommand(
+            command="/changemodel", description=f"Change gpt model"
+        ))
     await bot.delete_my_commands()
     await bot.set_my_commands(commands)
 

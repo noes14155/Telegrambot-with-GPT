@@ -22,24 +22,17 @@ class BotService:
         load_dotenv()
         self.BOT_TOKEN = os.getenv("BOT_TOKEN")
         self.HG_TOKEN = os.getenv("HG_TOKEN")
+        self.CHIMERAGPT_KEY = os.environ.get("CHIMERAGPT_KEY",None)
         try:
             self.BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
         except:
             self.BOT_OWNER_ID = ''
             print('Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
-        try:
-            self.HG_IMG2TEXT = os.getenv("HG_IMG2TEXT")
-        except:
-            self.HG_IMG2TEXT = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'
-        try:
-            self.DEFAULT_LANGUAGE = os.getenv("DEFAULT_LANGUAGE")
-        except:
-            self.DEFAULT_LANGUAGE = 'en'
-        try:
-            self.PLUGINS = os.getenv("PLUGINS")
-        except:
-            self.PLUGINS = True
-
+        
+        self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
+        self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")
+        self.PLUGINS = bool(os.environ.get("PLUGINS", True))
+        
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
         self.lm = language_manager.LanguageManager(
@@ -50,7 +43,7 @@ class BotService:
         self.yt = yt_transcript.YoutubeTranscript()
         self.ft = file_transcript.FileTranscript()
         self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT)
-        self.gpt = chat_gpt.ChatGPT()
+        self.gpt = chat_gpt.ChatGPT(self.CHIMERAGPT_KEY)
         self.ocr = ocr.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
         self.db.create_tables()
 
@@ -180,12 +173,12 @@ class BotService:
             prompt = yt_transcript
         EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
         text = await self.gpt.generate_response(
-            self.PLUGIN_PROMPT, "plugins", EXTRA_PROMPT, {}, prompt
+            self.PLUGIN_PROMPT, EXTRA_PROMPT, {}, prompt
         )
         result, plugin_name = await self.ws.generate_query(text, self.plugins_dict)
         if result is None and plugin_name is None:
             text = await self.gpt.generate_response(
-                    bot_messages["bot_prompt"], "", "", history, prompt
+                    bot_messages["bot_prompt"], "", history, prompt
                 )
         else:
             text = await self.gpt.generate_response(
