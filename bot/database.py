@@ -12,7 +12,8 @@ class Database:
     def create_tables(self):
         settings_query = """CREATE TABLE IF NOT EXISTS settings 
              (user_id INTEGER PRIMARY KEY, lang TEXT DEFAULT 'en',
-                persona TEXT DEFAULT 'Julie_friend')"""
+                persona TEXT DEFAULT 'Julie_friend',
+                "model"	TEXT DEFAULT 'gpt-4')"""
         
         history_query = """CREATE TABLE IF NOT EXISTS history 
              (user_id INTEGER, role TEXT, content TEXT)"""
@@ -24,15 +25,15 @@ class Database:
         if self.conn:
             self.conn.close()
 
-    def insert_settings(self, user_id, lang='en', persona='Julie_friend'):
-        query = """INSERT OR IGNORE INTO settings (user_id, lang, persona)
-                 VALUES (?, ?, ?)"""
-        self.conn.execute(query, (user_id, lang, persona))
+    def insert_settings(self, user_id, lang='en', persona='Julie_friend',model='gpt-3.5-turbo'):
+        query = """INSERT OR IGNORE INTO settings (user_id, lang, persona, model)
+                 VALUES (?, ?, ?, ?)"""
+        self.conn.execute(query, (user_id, lang, persona,model))
         self.conn.commit()
 
-    def update_settings(self, user_id, lang='en', persona='Julie_friend'):
-        query = """UPDATE settings SET lang=?, persona=? WHERE user_id=?"""
-        self.conn.execute(query, (lang, persona, user_id))
+    def update_settings(self, user_id, lang='en', persona='Julie_friend',model='gpt-3.5-turbo'):
+        query = """UPDATE settings SET lang=?, persona=?, model=? WHERE user_id=?"""
+        self.conn.execute(query, (lang, persona, model, user_id))
         self.conn.commit()
 
     def insert_history(self, user_id, role, content):
@@ -42,13 +43,13 @@ class Database:
         self.conn.commit()
 
     def get_settings(self, user_id):
-        query = """SELECT lang, persona FROM settings WHERE user_id=?"""
+        query = """SELECT lang, persona, model FROM settings WHERE user_id=?"""
         row = self.conn.execute(query, (user_id,)).fetchone()
         if row:
-            lang, persona = row
-            return lang, persona
+            lang, persona, model = row
+            return lang, persona, model
         else:
-            return None, None
+            return None, None, None
 
     def get_history(self, user_id):
         query = """SELECT role, content FROM history WHERE user_id=?"""

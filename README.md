@@ -121,6 +121,9 @@ To run this project, you will need to create a .env file or rename the existing 
 - `BOT_TOKEN`
 Get this by messaging @botfather Refer to [📖 Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
 
+- `CHIMERAGPT_KEY`
+Get this by messaging run the /key get command in any text channel in [Chimera GPT discord](https://discord.gg/chimeragpt)
+
 - `HG_TOKEN`
 Optional(Required for image captioning). Sign up on hugging face and get the token from  [🔗 Hugging Face](https://huggingface.co/settings/tokens).      
       
@@ -129,7 +132,8 @@ Required for image captioning. If you wnat to use another model for image captio
 Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'     
 
 - `DEFAULT_LANG`
-Change to your language currently English and Russian supported. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
+Change to your language default english. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
+
 
 🎉 You're all set! Enjoy using the Telegram bot with ChatGPT!        
 

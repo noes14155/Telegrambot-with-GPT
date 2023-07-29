@@ -47,10 +47,3 @@ class ImageGenerator:
         text = client.predict(prompt, api_name="/predict" )
         return text
     
-    async def generate_keyboard(self, key):
-        markup = ReplyKeyboardMarkup(row_width=5)
-        if key == "ratio":
-            markup.add(*[KeyboardButton(x) for x in self.RATIO_OPTIONS.keys()])
-        elif key == "style":
-            markup.add(*[KeyboardButton(x) for x in self.STYLE_OPTIONS.keys()])
-        return markup

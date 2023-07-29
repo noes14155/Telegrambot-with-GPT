@@ -9,8 +9,8 @@ from itertools import islice
 import wolframalpha
 
 class WebSearch:
-    def __init__(self, lang):
-        self.lang = lang
+    
+        
 
     async def ddg_search(self, prompt, template_message, news=False):
         if not isinstance(prompt, str) or not isinstance(template_message, str):
@@ -66,19 +66,7 @@ class WebSearch:
             print(f"Failed to extract text from website: {e}")
             return None
 
-    async def generate_keyboard(self, key):
-        if not isinstance(key, str):
-            raise ValueError("key must be a string")
-
-        markup = ReplyKeyboardMarkup(row_width=5)
-        if key == "lang":
-            markup.add(
-                *(
-                    KeyboardButton(f"{self.lang['languages'][lang_code]}({lang_code})")
-                    for lang_code in self.lang["available_lang"]
-                )
-            )
-        return markup
+  
 
     async def generate_query(self, response, plugins_dict):
         if not isinstance(response, str) or not isinstance(plugins_dict, dict):

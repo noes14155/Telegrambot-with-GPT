@@ -34,7 +34,7 @@ class LanguageManager:
         else:
             self.db_connection.insert_settings(user_id, lang)
     def local_messages(self, user_id):
-        lang, persona = self.db_connection.get_settings(user_id)
+        lang, persona, model = self.db_connection.get_settings(user_id)
         if not lang:
             lang = self.DEFAULT_LANGUAGE
             self.db_connection.insert_settings(user_id, lang)

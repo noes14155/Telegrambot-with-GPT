@@ -27,11 +27,12 @@ class MyStates(StatesGroup):
     SELECT_RATIO = State()
     SELECT_LANG = State()
     SELECT_PERSONA = State()
+    SELECT_MODEL = State()
 
 def owner_only(func):
     @wraps(func)
     async def wrapped(update, context, *args, **kwargs):
-        if update.message.from_user.id != owner_id:
+        if update.message.from_user.username != owner_id:
             await update.message.reply("Only the bot owner can use this command!")
             return
         return await func(update, context, *args, **kwargs)
@@ -108,6 +109,20 @@ async def select_lang_handler(call: types.Message, state: FSMContext):
     else:
         await lang_handler(call)
 
+@dp.message_handler(commands=["changemodel"])
+async def model_handler(call: types.Message):
+    response, markup = await service.changemodel()
+    await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
+    await MyStates.SELECT_MODEL.set()
+
+@dp.message_handler(state=MyStates.SELECT_MODEL)
+async def select_model_handler(call: types.Message, state: FSMContext):
+    response, markup = await service.select_model(user_id=call.from_user.id,user_message=call.text)
+    if response and markup:
+        await state.finish()
+        await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
+    else:
+        await model_handler(call)
 
 @dp.message_handler(commands=["img"])
 async def img_handler(call: types.Message):
