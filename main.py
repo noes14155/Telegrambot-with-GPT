@@ -3,6 +3,7 @@ import logging
 import os
 import random
 
+from io import BytesIO
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ChatType
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -140,7 +141,7 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
     await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
     await bot.send_photo(chat_id=call.chat.id, photo=filename)
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    if os.path.exists(filename):
+    if not isinstance(filename, BytesIO):
         os.remove(filename)
     await state.finish()
 

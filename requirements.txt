@@ -20,5 +20,6 @@ speechrecognition
 wolframalpha
 wikipedia
 pydub
+pycryptodome
 flask
 openai
