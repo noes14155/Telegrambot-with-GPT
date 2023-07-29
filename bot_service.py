@@ -1,4 +1,6 @@
 import os
+import requests
+from colorama import Fore
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.types import ReplyKeyboardRemove
 from dotenv import load_dotenv
@@ -20,14 +22,27 @@ from bot import chat_gpt
 class BotService:
     def __init__(self):
         load_dotenv()
-        self.BOT_TOKEN = os.getenv("BOT_TOKEN")
+        try:
+            self.BOT_TOKEN = os.getenv("BOT_TOKEN")
+            if self.validate_token(self.BOT_TOKEN):
+                print(Fore.GREEN, f"{self.bot_username} has successfully connected to telegram")
+            else:
+                print(Fore.RED,'Invalid bot token')
+                exit
+        except:
+            print(Fore.RED,'please add your telegram bot token i the env file')
+            exit
         self.HG_TOKEN = os.getenv("HG_TOKEN")
-        self.CHIMERAGPT_KEY = os.environ.get("CHIMERAGPT_KEY",None)
+        try:
+            self.CHIMERAGPT_KEY = os.getenv("CHIMERAGPT_KEY")
+        except:
+            print(Fore.RED,'Please add your chimeragpt apikey in your env file')
+            exit
         try:
             self.BOT_OWNER_ID = os.getenv("BOT_OWNER_ID")
         except:
             self.BOT_OWNER_ID = ''
-            print('Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
+            print(Fore.WHITE,'Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
         
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
         self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")
@@ -58,7 +73,17 @@ class BotService:
             #self.gpt.models.append('bing')
             self.gpt.models.append('getgpt')
         self.personas = {}
-        
+
+    def validate_token(self,bot_token):
+                url = f"https://api.telegram.org/bot{bot_token}/getMe"
+                response = requests.get(url)
+                data = response.json()
+
+                if response.status_code == 200 and data["ok"]:
+                    self.bot_username = data["result"]["username"]
+                    return True
+                else:
+                    return False
 
     async def start(self, user_id):
         bot_messages = self.lm.local_messages(user_id)
@@ -153,11 +178,16 @@ class BotService:
         return response
 
     async def select_prompt(self, user_id, user_message, state):
+        data = await state.get_data()
+        command = data.get("command")
         bot_messages = self.lm.local_messages(user_id=user_id)
-        client = Client("http://127.0.0.1:7860/")
-        filename = client.predict(user_message, api_name="/predict")
-        if filename:
-                photo = open(filename, "rb")
+        if command == '/img':
+            client = Client("http://127.0.0.1:7860/")
+            filename = client.predict(user_message, api_name="/predict")
+            if filename:
+                    photo = open(filename, "rb")
+        elif command == '/dalle':
+            photo = await self.ig.dalle_generate(prompt=user_message, size='512x512')
         return photo
 
 

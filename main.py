@@ -124,11 +124,25 @@ async def select_model_handler(call: types.Message, state: FSMContext):
     else:
         await model_handler(call)
 
-@dp.message_handler(commands=["img"])
-async def img_handler(call: types.Message):
+@dp.message_handler(commands=["img","dalle"])
+async def img_handler(call: types.Message, state: FSMContext):
+    await state.update_data(command=call.text)
     response = await service.img(user_id=call.from_user.id)
     await bot.send_message(call.chat.id, text=response)
     await MyStates.SELECT_PROMPT.set()
+
+@dp.message_handler(state=MyStates.SELECT_PROMPT)
+async def select_prompt_handler(call: types.Message, state: FSMContext):
+    waiting_id = await create_waiting_message(chat_id=call.chat.id)
+    filename = await service.select_prompt(
+        user_id=call.from_user.id, user_message=call.text, state=state
+    )
+    await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
+    await bot.send_photo(chat_id=call.chat.id, photo=filename)
+    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
+    if os.path.exists(filename):
+        os.remove(filename)
+    await state.finish()
 
 @owner_only
 @dp.message_handler(commands=['toggledm'])
@@ -140,17 +154,6 @@ async def toggle_dm(message: types.Message):
     dm_enabled = not dm_enabled
     await message.reply(f"Direct messages are now {'enabled' if dm_enabled else 'disabled'}")
         
-@dp.message_handler(state=MyStates.SELECT_PROMPT)
-async def select_prompt_handler(call: types.Message, state: FSMContext):
-    waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    filename = await service.select_prompt(
-        user_id=call.from_user.id, user_message=call.text, state=state
-    )
-    await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
-    await bot.send_photo(chat_id=call.chat.id, photo=filename)
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    os.remove(filename)
-    await state.finish()
 
 @dp.message_handler(content_types=["text"])
 async def chat_handler(call: types.Message):
@@ -203,6 +206,9 @@ async def set_commands(user_id):
             command="/img", description=f"🎨 {bot_messages['img_description']}"
         ),
         types.BotCommand(
+            command="/dalle",description="Generate image using DALLE-E"
+        ),
+        types.BotCommand(
             command="/lang", description=f"🌐 {bot_messages['lang_description']}"
         ),
         types.BotCommand(
@@ -214,16 +220,15 @@ async def set_commands(user_id):
         types.BotCommand(
             command="/help", description=f"ℹ️  {bot_messages['help_description']}"
         ),
-              
+        types.BotCommand(
+            command="/changemodel", description=f"Change gpt model"
+        )     
     ]
     if service.BOT_OWNER_ID != '':
         commands.append(types.BotCommand(
             command="/toggledm", description=f"Toggle Direct Message"
         ))
-    if service.CHIMERAGPT_KEY != None:
-        commands.append(types.BotCommand(
-            command="/changemodel", description=f"Change gpt model"
-        ))
+    
     await bot.delete_my_commands()
     await bot.set_my_commands(commands)
 

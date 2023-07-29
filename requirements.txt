@@ -21,3 +21,4 @@ wolframalpha
 wikipedia
 pydub
 flask
+openai

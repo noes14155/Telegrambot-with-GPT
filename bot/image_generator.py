@@ -4,6 +4,8 @@ from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 import gradio as gr
 from gradio_client import Client
 import threading
+import  openai
+import io
 
 class ImageGenerator:
     def __init__(self, HG_IMG2TEXT):
@@ -47,3 +49,14 @@ class ImageGenerator:
         text = client.predict(prompt, api_name="/predict" )
         return text
     
+    async def dalle_generate(self, prompt, size):
+        response = openai.Image.create(
+            prompt=prompt,
+            size=size
+        )
+        image_url = response["data"][0]["url"]
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url) as response:
+                content = await response.content.read()
+                img_file = io.BytesIO(content)
+                return img_file
