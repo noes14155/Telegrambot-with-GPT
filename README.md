@@ -2,8 +2,7 @@
 🤖 A Telegram bot powered by ChatGPT using the Aiogram API.       
 
 ℹ️ Note: The Hugging Face token is only required for image captioning.      
-
-### Image generation is currentky not working as imaginepy API is down. I am looking for an aternative. Open to suggestions.        
+      
 
 ✨ Features:           
   
@@ -11,8 +10,7 @@
 - Easy to translate to your own language with multi-language support.
 - Internet access using  [duckduckgo_search.](https://github.com/deedy5/duckduckgo_search)
 - Supports voice transcription with [speech_recognition](https://github.com/Uberi/speech_recognition)
-~~- Image generation using [Imaginepy](https://github.com/ItsCEED/Imaginepy)~~
-- Image generation using Stability Diffusion     
+- Image generation using Stability Diffusion and DALL-E.     
 - Plugin support for DuckDuckGo search and news (under testing).    
         
        
