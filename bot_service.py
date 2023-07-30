@@ -73,6 +73,7 @@ class BotService:
             #self.gpt.models.append('bing')
             self.gpt.models.append('getgpt')
         self.personas = {}
+        self.valid_sizes = ['256x256','512x512','1024x1024']
 
     def validate_token(self,bot_token):
                 url = f"https://api.telegram.org/bot{bot_token}/getMe"
@@ -180,6 +181,7 @@ class BotService:
     async def select_prompt(self, user_id, user_message, state):
         data = await state.get_data()
         command = data.get("command")
+        markup = None
         bot_messages = self.lm.local_messages(user_id=user_id)
         if command == '/img':
             client = Client("http://127.0.0.1:7860/")
@@ -187,9 +189,16 @@ class BotService:
             if filename:
                     photo = open(filename, "rb")
         elif command == '/dalle':
-            photo = await self.ig.dalle_generate(prompt=user_message, size='512x512')
-        return photo
+            photo = None
+            markup = self.generate_keyboard('size')
+        return photo, markup
 
+    async def select_size(self,user_id, user_message, state):
+        data = await state.get_data()
+        prompt = data.get('prompt')
+        photo = await self.ig.dalle_generate(prompt=prompt, size=user_message)
+        markup = ReplyKeyboardRemove()
+        return photo, markup
 
     
     async def chat(self, call):
@@ -202,15 +211,15 @@ class BotService:
             lang,
             self.lm.available_lang["languages"]["en"],
         )
+        lm = self.lm.available_lang["languages"][lang]
         rows = self.db.get_history(user_id)[-10:]
         history = []
         prompt = user_message
         for row in rows:
             role, content = row
             history.append({"role": role, "content": content})
-        bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
-        if user.first_name is not None:
-            bot_messages["bot_prompt"] += f"And you should address the user as '{user.first_name}'"
+        
+        
         web_text = await self.ws.extract_text_from_website(user_message)
         if web_text is not None:
             prompt = web_text
@@ -222,13 +231,17 @@ class BotService:
             self.PLUGIN_PROMPT, EXTRA_PROMPT, {}, prompt, model=model
         )
         result, plugin_name = await self.ws.generate_query(text, self.plugins_dict)
+        if user.first_name is not None:
+            bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
+        bot_messages["bot_prompt"] += f"You should reply to the user in {lm} as a native. Even if the user queries in another language reply only in {lm}. Completely translated."
+
         if result is None and plugin_name is None:
             text = await self.gpt.generate_response(
                     bot_messages["bot_prompt"], "", history, prompt, model=model
                 )
         else:
             text = await self.gpt.generate_response(
-                bot_messages["bot_prompt"], plugin_name, result, history, prompt, model=model
+                bot_messages["bot_prompt"], result, history, prompt, model=model
             )
         self.db.insert_history(user_id=user_id, role="user", content=user_message)
         self.db.insert_history(user_id=user_id, role="assistant", content=text)
@@ -338,4 +351,6 @@ class BotService:
             )
         elif key == 'model':
             markup.add(*[KeyboardButton(x) for x in self.gpt.models])
+        elif key == 'size':
+            markup.add(*[KeyboardButton(x) for x in self.valid_sizes])
         return markup

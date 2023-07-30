@@ -29,6 +29,7 @@ class MyStates(StatesGroup):
     SELECT_LANG = State()
     SELECT_PERSONA = State()
     SELECT_MODEL = State()
+    SELECT_SIZE = State()
 
 def owner_only(func):
     @wraps(func)
@@ -132,18 +133,37 @@ async def img_handler(call: types.Message, state: FSMContext):
     await bot.send_message(call.chat.id, text=response)
     await MyStates.SELECT_PROMPT.set()
 
+
 @dp.message_handler(state=MyStates.SELECT_PROMPT)
 async def select_prompt_handler(call: types.Message, state: FSMContext):
-    waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    filename = await service.select_prompt(
+    filename, markup = await service.select_prompt(
         user_id=call.from_user.id, user_message=call.text, state=state
     )
-    await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
-    await bot.send_photo(chat_id=call.chat.id, photo=filename)
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    if not isinstance(filename, BytesIO):
-        os.remove(filename)
-    await state.finish()
+    if markup == None:
+        waiting_id = await create_waiting_message(chat_id=call.chat.id)
+        await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
+        await bot.send_photo(chat_id=call.chat.id, photo=filename)
+        await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
+        if not isinstance(filename, BytesIO):
+            os.remove(filename)
+        await state.finish()
+    else:
+        response = 'Please select size for the image'
+        await state.update_data(prompt=call.text)
+        await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
+        await MyStates.SELECT_SIZE.set()
+
+@dp.message_handler(state=MyStates.SELECT_SIZE)
+async def select_size_handler(call: types.Message, state: FSMContext):
+    if call.text in service.valid_sizes:
+        waiting_id = await create_waiting_message(chat_id=call.chat.id)
+        await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
+        filename, markup = await service.select_size( user_id=call.from_user.id, user_message=call.text, state=state)
+        await bot.send_photo(chat_id=call.chat.id, photo=filename, reply_markup=markup)
+        await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
+        await state.finish()
+    else:
+        await select_prompt_handler(call=call,state=state)
 
 @owner_only
 @dp.message_handler(commands=['toggledm'])
