@@ -185,9 +185,8 @@ class BotService:
         bot_messages = self.lm.local_messages(user_id=user_id)
         if command == '/img':
             client = Client("http://127.0.0.1:7860/")
-            filename = client.predict(user_message, api_name="/predict")
-            if filename:
-                    photo = open(filename, "rb")
+            photo = client.predict(user_message, api_name="/predict")
+            
         elif command == '/dalle':
             photo = None
             markup = self.generate_keyboard('size')

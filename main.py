@@ -142,10 +142,10 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
     if markup == None:
         waiting_id = await create_waiting_message(chat_id=call.chat.id)
         await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
-        await bot.send_photo(chat_id=call.chat.id, photo=filename)
+        photo = open(filename, "rb")
+        await bot.send_photo(chat_id=call.chat.id, photo=photo)
         await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-        if not isinstance(filename, BytesIO):
-            os.remove(filename)
+        os.remove(filename)
         await state.finish()
     else:
         response = 'Please select size for the image'
