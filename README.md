@@ -1,3 +1,6 @@
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/TSrfnk?referralCode=ZTYsGf)
+
+
 ## Telegrambot-with-GPT4free
 🤖 A Telegram bot powered by ChatGPT using the Aiogram API.       
 
