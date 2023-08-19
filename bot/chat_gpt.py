@@ -1,5 +1,3 @@
-import bot.Providers.bing_wrapper as bing
-import bot.Providers.getgpt_wrapper as ai
 import requests
 import openai
 
@@ -38,21 +36,19 @@ class ChatGPT:
                 *history,
                 {"role": "user", "content": prompt},
             ]
-        if model.lower() == 'bing':
-            for chunk in bing._create_completion(model=['gpt-4'],messages=messages,stream=True):
-                text += chunk
-        elif model.lower() == 'getgpt':
-            for chunk in ai._create_completion(model=['gpt-4'],messages=messages,stream=True):
-                text += chunk
-        else:
-            try:
-                response = openai.ChatCompletion.create(
-                        model=model,
-                        messages=messages
-                    )
-                text = response.choices[0].message.content
-            except:
-                text = 'model not available'
+        
+        try:
+            response = openai.ChatCompletion.create(
+                    model=model,
+                    messages=messages
+                )
+            text = response.choices[0].message.content
+        except Exception as e:
+            text = f'model not available ```{e}```'
+            if "rate limit" in text.lower():
+                print(f"Rate limit on {model}, retrying with next model")
+                model = 'gpt-4' if model == 'gpt-3.5-turbo' else 'gpt-3.5-turbo'
+                return await self.generate_response(instruction, plugin_result, history, prompt, model)
         if text == '':
             text = 'Failed to generate a response using the selected model'
         return text

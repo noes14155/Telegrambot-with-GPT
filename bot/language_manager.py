@@ -28,11 +28,11 @@ class LanguageManager:
     def set_language(self, user_id, lang):
         if not user_id:
             print("user_id does not exist")
-        language = self.db_connection.get_settings(user_id)
+        language,persona,model = self.db_connection.get_settings(user_id)
         if language:
-            self.db_connection.update_settings(user_id, lang)
+            self.db_connection.update_settings(user_id, lang,persona,model)
         else:
-            self.db_connection.insert_settings(user_id, lang)
+            self.db_connection.insert_settings(user_id, lang,persona,model)
     def local_messages(self, user_id):
         lang, persona, model = self.db_connection.get_settings(user_id)
         if not lang:

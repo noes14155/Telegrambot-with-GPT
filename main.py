@@ -185,7 +185,8 @@ async def chat_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response = await service.chat(call=call)
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    await bot.send_message(chat_id=call.chat.id, text=response)
+    response = service.escape_markdown(response)
+    await bot.send_message(chat_id=call.chat.id, text=response, parse_mode='MarkdownV2')
 
 
 @dp.message_handler(content_types=["voice", "audio"])

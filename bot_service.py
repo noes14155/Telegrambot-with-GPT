@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from colorama import Fore
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
@@ -70,8 +71,7 @@ class BotService:
         self.PLUGIN_PROMPT = self.lm.plugin_lang["PLUGIN_PROMPT"] + self.plugins_string
         if self.CHIMERAGPT_KEY != None:
             self.gpt.fetch_chat_models()
-            #self.gpt.models.append('bing')
-            self.gpt.models.append('getgpt')
+            
         self.personas = {}
         self.valid_sizes = ['256x256','512x512','1024x1024']
 
@@ -131,7 +131,7 @@ class BotService:
     async def select_lang(self, user_id, user_message):
         bot_messages = self.lm.local_messages(user_id=user_id)
         lang_code = user_message
-
+        
         if lang_code in self.lm.available_lang["available_lang"]:
             self.lm.set_language(user_id, lang_code)
             markup = ReplyKeyboardRemove()
@@ -150,8 +150,9 @@ class BotService:
         return response, markup
     
     async def select_persona(self,user_id,user_message):
+        lang, persona, model = self.db.get_settings(user_id)
         if user_message in self.personas.keys():
-            self.db.update_settings(user_id,persona=user_message)
+            self.db.update_settings(user_id,lang,persona=user_message,model=model)
             response = f'Persona set to {user_message}.'
             await self.clear(user_id)
             markup = ReplyKeyboardRemove()
@@ -165,8 +166,9 @@ class BotService:
         return response, markup
     
     async def select_model(self,user_id,user_message):
+        lang, persona, model = self.db.get_settings(user_id)
         if user_message in self.gpt.models:
-            self.db.update_settings(user_id,model=user_message)
+            self.db.update_settings(user_id,lang,persona,model=user_message)
             response = f'Model set to {user_message}.'
             markup = ReplyKeyboardRemove()
         else:
@@ -181,7 +183,7 @@ class BotService:
     async def select_prompt(self, user_id, user_message, state):
         data = await state.get_data()
         command = data.get("command")
-        markup = None
+        markup = photo = None
         bot_messages = self.lm.local_messages(user_id=user_id)
         if command == '/img':
             client = Client("http://127.0.0.1:7860/")
@@ -335,6 +337,11 @@ class BotService:
 
         return response
 
+    def escape_markdown(self,text):
+        escape_chars = ['_', '-', '!', '*', '[', ']', '(', ')', '~', '>', '#', '+', '=', '{','}','|','.']
+        regex = r"([%s])" % "|".join(map(re.escape, escape_chars))
+        return re.sub(regex, r"\\\1", text)
+    
     def generate_keyboard(self,key):
         if not isinstance(key, str):
             raise ValueError("key must be a string")
