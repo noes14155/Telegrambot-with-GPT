@@ -21,6 +21,6 @@ wolframalpha
 wikipedia
 pydub
 pycryptodome
-git
+GitPython
 flask
 openai
