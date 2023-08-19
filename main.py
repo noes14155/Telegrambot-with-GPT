@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import random
-
+from updater import SelfUpdating
 from io import BytesIO
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import ChatType
@@ -15,6 +15,7 @@ import bot_service
 from replit_detector import ReplitFlaskApp
 
 service = bot_service.BotService()
+updater = SelfUpdating('noes14155/Telegrambot-with-GPT4free')
 storage = MemoryStorage()
 bot = Bot(token=service.BOT_TOKEN)
 owner_id = service.BOT_OWNER_ID
@@ -260,6 +261,7 @@ async def main():
 
 
 if __name__ == "__main__":
+    updater.check_for_update()
     replit_app = ReplitFlaskApp()
     replit = replit_app.run()
     if not replit:
