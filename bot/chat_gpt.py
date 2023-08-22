@@ -27,12 +27,12 @@ class ChatGPT:
         return self.models
 
     async def generate_response(
-        self, instruction, plugin_result, history, prompt, model='gpt-3.5-turbo'
+        self, instruction, plugin_result, history, prompt, function=[], model='gpt-3.5-turbo'
     ):
         text = ''
         messages = [
-                {"role": "system", "content": plugin_result},
                 {"role": "system", "content": instruction},
+                {"role": "system", "content": plugin_result},
                 *history,
                 {"role": "user", "content": prompt},
             ]
@@ -40,9 +40,10 @@ class ChatGPT:
         try:
             response = openai.ChatCompletion.create(
                     model=model,
-                    messages=messages
+                    messages=messages,
+                    functions=function
                 )
-            text = response.choices[0].message.content
+            text = response
         except Exception as e:
             text = f'model not available ```{e}```'
             if "rate limit" in text.lower():

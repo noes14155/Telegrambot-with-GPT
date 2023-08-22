@@ -175,11 +175,16 @@ async def toggle_dm(message: types.Message):
     global dm_enabled 
     dm_enabled = not dm_enabled
     await message.reply(f"Direct messages are now {'enabled' if dm_enabled else 'disabled'}")
+    logging.info(
+            f"Direct Messages {'enabled' if dm_enabled else 'disabled'} by (id: {message.from_user.id})")
+        
         
 
 @dp.message_handler(content_types=["text"])
 async def chat_handler(call: types.Message):
-    
+    logging.info(
+            f'New message received from user {call.from_user.full_name} (id: {call.from_user.id})')
+        
     if not dm_enabled and call.chat.type == ChatType.PRIVATE:
         await call.reply("Direct messages are disabled by bot owner")
         return
@@ -226,10 +231,10 @@ async def set_commands(user_id):
             command="/hello", description=f"🌟 {bot_messages['hello_description']}"
         ),
         types.BotCommand(
-            command="/img", description=f"🎨 {bot_messages['img_description']}"
+            command="/img", description="🎨 Generate image using Stable Diffusion"
         ),
         types.BotCommand(
-            command="/dalle",description="Generate image using DALLE-E"
+            command="/dalle",description="🎨 Generate image using DALLE-E"
         ),
         types.BotCommand(
             command="/lang", description=f"🌐 {bot_messages['lang_description']}"

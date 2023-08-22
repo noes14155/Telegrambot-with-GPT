@@ -13,11 +13,13 @@ from bot import (
     image_generator,
     language_manager,
     ocr,
+    plugin_manager,
     voice_transcript,
     web_search,
     yt_transcript,
+    chat_gpt
 )
-from bot import chat_gpt
+
 
 
 class BotService:
@@ -46,8 +48,7 @@ class BotService:
             print(Fore.WHITE,'Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
         
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
-        self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")
-        
+        self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")       
         self.PLUGINS = bool(os.environ.get("PLUGINS", True))
         
         os.makedirs("downloaded_files", exist_ok=True)
@@ -63,6 +64,7 @@ class BotService:
         self.gpt = chat_gpt.ChatGPT(self.CHIMERAGPT_KEY)
         self.ocr = ocr.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
         self.db.create_tables()
+        self.plugin = plugin_manager.PluginManager()
 
         self.plugins_dict = self.lm.plugin_lang["plugins_dict"]
         self.plugins_string = ""
@@ -105,7 +107,6 @@ class BotService:
         bot_messages = self.lm.local_messages(user_id=user_id)
         self.db.delete_user_history(user_id=user_id)
         response = f"🧹 {bot_messages['history_cleared']}"
-
         return response
 
     async def help(self, user_id):
@@ -125,7 +126,6 @@ class BotService:
         bot_messages = self.lm.local_messages(user_id=user_id)
         markup = self.generate_keyboard("lang")
         response = bot_messages["lang_select"]
-
         return response, markup
 
     async def select_lang(self, user_id, user_message):
@@ -220,7 +220,6 @@ class BotService:
             role, content = row
             history.append({"role": role, "content": content})
         
-        
         web_text = await self.ws.extract_text_from_website(user_message)
         if web_text is not None:
             prompt = web_text
@@ -228,22 +227,28 @@ class BotService:
         if yt_transcript is not None:
             prompt = yt_transcript
         EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
-        text = await self.gpt.generate_response(
-            self.PLUGIN_PROMPT, EXTRA_PROMPT, {}, prompt, model=model
-        )
-        result, plugin_name = await self.ws.generate_query(text, self.plugins_dict)
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
         bot_messages["bot_prompt"] += f"You should reply to the user in {lm} as a native. Even if the user queries in another language reply only in {lm}. Completely translated."
-
-        if result is None and plugin_name is None:
-            text = await self.gpt.generate_response(
-                    bot_messages["bot_prompt"], "", history, prompt, model=model
-                )
+        function = self.plugin.get_functions_specs() if self.PLUGINS else []
+        text = await self.gpt.generate_response(
+            '', EXTRA_PROMPT, history, prompt,function=function, model=model
+        )
+        #result, plugin_name = await self.ws.generate_query(text, self.plugins_dict)
+        
+        if isinstance(text, str):
+             return text
+        text = text["choices"][0]["message"]
+        if text['content']:
+            text = text['content']
         else:
+            fn_name = text["function_call"]["name"]
+            arguments = text["function_call"]["arguments"]
+            result = await self.plugin.call_function(fn_name,arguments)
             text = await self.gpt.generate_response(
                 bot_messages["bot_prompt"], result, history, prompt, model=model
             )
+            text = text["choices"][0]["message"]['content']
         self.db.insert_history(user_id=user_id, role="user", content=user_message)
         self.db.insert_history(user_id=user_id, role="assistant", content=text)
 

@@ -136,8 +136,7 @@ You will be given a list of plugins with description.
 "
 
 EXTRA_PROMPT: "
-As an AI language model, you have access to various plugins that can provide real-time information. 
-Use these plugins to enhance your responses and provide up-to-date information to the user
+Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
 "
 
 plugins_dict : {
