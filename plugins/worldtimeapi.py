@@ -10,7 +10,7 @@ class WorldTimeApiPlugin(Plugin):
     A plugin to get the current time from a given timezone, using WorldTimeAPI
     """
     def __init__(self):
-        default_timezone = os.getenv('WORLDTIME_DEFAULT_TIMEZONE')
+        default_timezone = os.getenv('WORLDTIME_DEFAULT_TIMEZONE','Europe/Rome')
         if not default_timezone:
             raise ValueError('WORLDTIME_DEFAULT_TIMEZONE environment variable must be set to use WorldTimeApiPlugin')
         self.default_timezone = default_timezone

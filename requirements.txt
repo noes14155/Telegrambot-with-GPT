@@ -27,3 +27,4 @@ openai
 gtts
 pytube
 whois
+spotipy
