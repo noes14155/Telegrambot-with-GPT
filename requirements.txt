@@ -24,3 +24,6 @@ pycryptodome
 GitPython
 flask
 openai
+gtts
+pytube
+whois
