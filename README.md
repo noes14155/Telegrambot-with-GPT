@@ -135,7 +135,10 @@ Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesfo
 - `DEFAULT_LANG`
 Change to your language default english. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
 
+- `Plugins`
+Enable o disable plugins. Default value True.        
 
+      
 🎉 You're all set! Enjoy using the Telegram bot with ChatGPT!        
 
 ## Contributors

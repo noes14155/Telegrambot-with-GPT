@@ -31,8 +31,8 @@ class ChatGPT:
     ):
         text = ''
         messages = [
-                {"role": "system", "content": instruction},
                 {"role": "system", "content": plugin_result},
+                {"role": "system", "content": instruction},
                 *history,
                 {"role": "user", "content": prompt},
             ]

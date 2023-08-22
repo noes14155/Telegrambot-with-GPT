@@ -230,9 +230,10 @@ class BotService:
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
         bot_messages["bot_prompt"] += f"You should reply to the user in {lm} as a native. Even if the user queries in another language reply only in {lm}. Completely translated."
+        bot_messages["bot_prompt"] += f"/n Always stay in character as {persona}"
         function = self.plugin.get_functions_specs() if self.PLUGINS else []
         text = await self.gpt.generate_response(
-            '', EXTRA_PROMPT, history, prompt,function=function, model=model
+            bot_messages['bot_prompt'], EXTRA_PROMPT, history, prompt,function=function, model=model
         )
         #result, plugin_name = await self.ws.generate_query(text, self.plugins_dict)
         

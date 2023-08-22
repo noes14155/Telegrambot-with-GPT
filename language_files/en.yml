@@ -136,7 +136,12 @@ You will be given a list of plugins with description.
 "
 
 EXTRA_PROMPT: "
+Don't make any assumptions, use the functions. 
+You don't have realtime information, make use of the plugins to reply to the user with realtime information. 
 Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
+Only use the functions you have been provided with.
+Don't mention about the functions to the user. Its for your use only.
+And always stay in character as mentioned before.
 "
 
 plugins_dict : {
