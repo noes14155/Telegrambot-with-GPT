@@ -3,7 +3,7 @@ chatbot.db
 bot/__pycache__/
 __pycache__/
 downloaded_files/
-.vscode/settings.json
+.vscode/
 venv/
 poetry.lock
 pyproject.toml

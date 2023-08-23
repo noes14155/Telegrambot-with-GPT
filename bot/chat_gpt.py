@@ -30,6 +30,10 @@ class ChatGPT:
         self, instruction, plugin_result, history, prompt, function=[], model='gpt-3.5-turbo'
     ):
         text = ''
+        if not model.startswith('gpt'):
+            plugin_result = '' 
+            function = []
+            print('Unsupported model. Plugins not used')
         messages = [
                 {"role": "system", "content": plugin_result},
                 {"role": "system", "content": instruction},

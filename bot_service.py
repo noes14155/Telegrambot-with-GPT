@@ -236,7 +236,6 @@ class BotService:
         text = await self.gpt.generate_response(
             bot_messages['bot_prompt'], EXTRA_PROMPT, history, prompt,function=function, model=model
         )
-        #result, plugin_name = await self.ws.generate_query(text, self.plugins_dict)
         
         if isinstance(text, str):
              return text
