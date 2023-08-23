@@ -47,7 +47,7 @@ class ChatGPT:
         except Exception as e:
             text = f'model not available ```{e}```'
             if "rate limit" in text.lower():
-                print(f"Rate limit on {model}, retrying with next model")
+                print(f"Rate limit on {model}, retrying with another model")
                 model = 'gpt-4' if model == 'gpt-3.5-turbo' else 'gpt-3.5-turbo'
                 return await self.generate_response(instruction, plugin_result, history, prompt, model)
         if text == '':

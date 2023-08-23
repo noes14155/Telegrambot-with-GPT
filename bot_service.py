@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import requests
 from colorama import Fore
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
@@ -246,10 +247,18 @@ class BotService:
             fn_name = text["function_call"]["name"]
             arguments = text["function_call"]["arguments"]
             result = await self.plugin.call_function(fn_name,arguments)
-            text = await self.gpt.generate_response(
+            for i in range(3):
+                text = await self.gpt.generate_response(
                 bot_messages["bot_prompt"], result, history, prompt, model=model
-            )
-            text = text["choices"][0]["message"]['content']
+                )
+                try:
+                    text = text["choices"][0]["message"]['content']
+                    break
+                except:
+                    print(text,' Retrying after 3 seconds')
+                    time.sleep(3)
+                    continue
+
         self.db.insert_history(user_id=user_id, role="user", content=user_message)
         self.db.insert_history(user_id=user_id, role="assistant", content=text)
 
