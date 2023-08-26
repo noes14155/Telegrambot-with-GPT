@@ -123,7 +123,7 @@ To run this project, you will need to create a .env file or rename the existing 
 Get this by messaging @botfather Refer to [📖 Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
 
 - `CHIMERAGPT_KEY`
-Get this by messaging run the /key get command in any text channel in [Chimera GPT discord](https://discord.gg/chimeragpt)
+Get this by messaging run the /key get command in any text channel in [Chimera GPT Telegram](https://discord.gg/chimeragpt) , [Chimera GPT Telegram](https://t.me/chimer_ai)
 
 - `HG_TOKEN`
 Optional(Required for image captioning). Sign up on hugging face and get the token from  [🔗 Hugging Face](https://huggingface.co/settings/tokens).      
