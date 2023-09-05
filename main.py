@@ -4,11 +4,13 @@ import os
 import random
 from updater import SelfUpdating
 from io import BytesIO
-from aiogram import Bot, Dispatcher, types
-from aiogram.types import ChatType
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
+from aiogram import Bot, Dispatcher, types, Router, F
+from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.context import FSMContext
+from aiogram.enums.chat_type import ChatType
+from aiogram.enums.chat_action import ChatAction
+from aiogram.fsm.state import State, StatesGroup
+from aiogram.filters import Command
 from functools import wraps
 
 import bot_service
@@ -19,7 +21,7 @@ updater = SelfUpdating('noes14155/Telegrambot-with-GPT4free')
 storage = MemoryStorage()
 bot = Bot(token=service.BOT_TOKEN)
 owner_id = service.BOT_OWNER_ID
-dp = Dispatcher(bot, storage=storage)
+dp = Dispatcher(storage=storage)
 logging.basicConfig(level=logging.INFO)
 dm_enabled = True
 
@@ -53,7 +55,7 @@ async def delete_waiting_message(chat_id, waiting_id):
     await bot.delete_message(chat_id=chat_id, message_id=waiting_id)
 
 
-@dp.message_handler(commands=["start", "hello"])
+@dp.message(Command("start", "hello"))
 async def start_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response = await service.start(user_id=call.from_user.id)
@@ -62,7 +64,7 @@ async def start_handler(call: types.Message):
     await set_commands(user_id=call.from_user.id)
 
 
-@dp.message_handler(commands=["clear"])
+@dp.message(Command("clear"))
 async def clear_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response = await service.clear(user_id=call.from_user.id)
@@ -70,72 +72,72 @@ async def clear_handler(call: types.Message):
     await bot.send_message(chat_id=call.chat.id, text=response)
 
 
-@dp.message_handler(commands=["help"])
+@dp.message(Command("help"))
 async def help_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response = await service.help(user_id=call.from_user.id)
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
     await bot.send_message(chat_id=call.chat.id, text=response)
 
-@dp.message_handler(commands=["changepersona"])
-async def persona_handler(call: types.Message):
+@dp.message(Command("changepersona"))
+async def persona_handler(call: types.Message, state: FSMContext):
     response, markup = await service.changepersona()
     await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
-    await MyStates.SELECT_PERSONA.set()
+    await state.set_state(MyStates.SELECT_PERSONA)
 
-@dp.message_handler(state=MyStates.SELECT_PERSONA)
+@dp.message(MyStates.SELECT_PERSONA)
 async def select_persona_handler(call: types.Message, state: FSMContext):
     response, markup = await service.select_persona(user_id=call.from_user.id,user_message=call.text)
     if response and markup:
-        await state.finish()
+        await state.clear()
         await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
     else:
         await persona_handler(call)
 
 
-@dp.message_handler(commands=["lang"])
-async def lang_handler(call: types.Message):
+@dp.message(Command("lang"))
+async def lang_handler(call: types.Message, state: FSMContext):
     response, markup = await service.lang(user_id=call.from_user.id)
     await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
-    await MyStates.SELECT_LANG.set()
+    await state.set_state(MyStates.SELECT_LANG)
 
 
-@dp.message_handler(state=MyStates.SELECT_LANG)
+@dp.message(MyStates.SELECT_LANG)
 async def select_lang_handler(call: types.Message, state: FSMContext):
     response, markup = await service.select_lang(
         user_id=call.from_user.id, user_message=call.text[-3:-1]
     )
     if response and markup:
         await call.answer(text=response, reply_markup=markup)
-        await state.finish()
+        await state.clear()
         await set_commands(user_id=call.from_user.id)
     else:
         await lang_handler(call)
 
-@dp.message_handler(commands=["changemodel"])
-async def model_handler(call: types.Message):
+@dp.message(Command("changemodel"))
+async def model_handler(call: types.Message, state: FSMContext):
     response, markup = await service.changemodel()
     await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
-    await MyStates.SELECT_MODEL.set()
+    await state.set_state(MyStates.SELECT_MODEL)
 
-@dp.message_handler(state=MyStates.SELECT_MODEL)
+@dp.message(MyStates.SELECT_MODEL)
 async def select_model_handler(call: types.Message, state: FSMContext):
     response, markup = await service.select_model(user_id=call.from_user.id,user_message=call.text)
     if response and markup:
-        await state.finish()
+        await state.clear()
         await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
     else:
         await model_handler(call)
 
-@dp.message_handler(commands=["img","dalle"])
+@dp.message(Command("img","dalle"))
 async def img_handler(call: types.Message, state: FSMContext):
     await state.update_data(command=call.text)
     response = await service.img(user_id=call.from_user.id)
     await bot.send_message(call.chat.id, text=response)
-    await MyStates.SELECT_PROMPT.set()
+    await state.set_state(MyStates.SELECT_PROMPT)
 
 
-@dp.message_handler(state=MyStates.SELECT_PROMPT)
+@dp.message(MyStates.SELECT_PROMPT)
 async def select_prompt_handler(call: types.Message, state: FSMContext):
     filename, markup = await service.select_prompt(
         user_id=call.from_user.id, user_message=call.text, state=state
@@ -147,14 +149,14 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
         await bot.send_photo(chat_id=call.chat.id, photo=photo)
         await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
         os.remove(filename)
-        await state.finish()
+        await state.clear()
     else:
         response = 'Please select size for the image'
         await state.update_data(prompt=call.text)
         await bot.send_message(chat_id=call.chat.id, text=response, reply_markup=markup)
-        await MyStates.SELECT_SIZE.set()
+        await state.set_state(MyStates.SELECT_SIZE)
 
-@dp.message_handler(state=MyStates.SELECT_SIZE)
+@dp.message(MyStates.SELECT_SIZE)
 async def select_size_handler(call: types.Message, state: FSMContext):
     if call.text in service.valid_sizes:
         waiting_id = await create_waiting_message(chat_id=call.chat.id)
@@ -162,12 +164,12 @@ async def select_size_handler(call: types.Message, state: FSMContext):
         filename, markup = await service.select_size( user_id=call.from_user.id, user_message=call.text, state=state)
         await bot.send_photo(chat_id=call.chat.id, photo=filename, reply_markup=markup)
         await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-        await state.finish()
+        await state.clear()
     else:
         await select_prompt_handler(call=call,state=state)
 
 @owner_only
-@dp.message_handler(commands=['toggledm'])
+@dp.message(Command('toggledm'))
 async def toggle_dm(message: types.Message):
     if message.from_user.username != owner_id:
         await message.reply("Sorry, only the bot owner can use this command.")
@@ -180,7 +182,7 @@ async def toggle_dm(message: types.Message):
         
         
 
-@dp.message_handler(content_types=["text"])
+@dp.message(F.content_type.in_({'text'}))
 async def chat_handler(call: types.Message):
     logging.info(
             f'New message received from user {call.from_user.full_name} (id: {call.from_user.id})')
@@ -190,12 +192,21 @@ async def chat_handler(call: types.Message):
         return
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response = await service.chat(call=call)
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    response = service.escape_markdown(response)
-    await bot.send_message(chat_id=call.chat.id, text=response, parse_mode='MarkdownV2')
+        
+    await bot.send_chat_action(chat_id=call.chat.id, action="typing")
+    text = ''
+    
+    text = service.escape_markdown(response)
+    await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text, parse_mode='MarkdownV2')
+        
+    #await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
+    #response = await service.chat(call=call)
+    #await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
+    #response = service.escape_markdown(response)
+    #await bot.send_message(chat_id=call.chat.id, text=response, parse_mode='MarkdownV2')
 
 
-@dp.message_handler(content_types=["voice", "audio"])
+@dp.message(F.content_type.in_({'voice','audio'}))
 async def voice_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response, transcript = await service.voice(user_id=call.from_user.id, file=call)
@@ -204,7 +215,7 @@ async def voice_handler(call: types.Message):
     await call.reply(response)
 
 
-@dp.message_handler(content_types=["photo"])
+@dp.message(F.content_type.in_({'photo'}))
 async def image_handler(call: types.Message):
     file_info = await bot.get_file(call.photo[-1].file_id)
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
@@ -215,8 +226,7 @@ async def image_handler(call: types.Message):
     await call.reply(transcript)
     await call.reply(response)
 
-
-@dp.message_handler(content_types=["document"])
+@dp.message(F.content_type.in_({'document'}))
 async def document_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response = await service.document(user_id=call.from_user.id, file=call)
@@ -262,7 +272,7 @@ async def set_commands(user_id):
 
 
 async def main():
-    await asyncio.gather(set_commands(None), dp.start_polling())
+    await asyncio.gather(set_commands(None), dp.start_polling(bot))
 
 
 if __name__ == "__main__":

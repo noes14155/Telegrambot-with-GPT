@@ -5,6 +5,7 @@ import requests
 from colorama import Fore
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.types import ReplyKeyboardRemove
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from dotenv import load_dotenv
 from gradio_client import Client
 
@@ -51,6 +52,7 @@ class BotService:
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
         self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")       
         self.PLUGINS = bool(os.environ.get("PLUGINS", True))
+        self.API_BASE = os.environ.get("API_BASE", 'https://chimeragpt.adventblocks.cc/api/v1')
         
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
@@ -62,7 +64,7 @@ class BotService:
         self.yt = yt_transcript.YoutubeTranscript()
         self.ft = file_transcript.FileTranscript()
         self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT)
-        self.gpt = chat_gpt.ChatGPT(self.CHIMERAGPT_KEY)
+        self.gpt = chat_gpt.ChatGPT(self.CHIMERAGPT_KEY,self.API_BASE)
         self.ocr = ocr.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
         self.db.create_tables()
         self.plugin = plugin_manager.PluginManager()
@@ -359,18 +361,18 @@ class BotService:
     def generate_keyboard(self,key):
         if not isinstance(key, str):
             raise ValueError("key must be a string")
-        markup = ReplyKeyboardMarkup(row_width=5)
+        builder = ReplyKeyboardBuilder()
         if key == 'persona':
-            markup.add(*[KeyboardButton(x) for x in self.personas.keys()])
+            for persona in self.personas.keys():
+                builder.button(text=persona)
         elif key == 'lang':
-            markup.add(
-                *(
-                    KeyboardButton(f"{self.lm.available_lang['languages'][lang_code]}({lang_code})")
-                    for lang_code in self.lm.available_lang["available_lang"]
-                )
-            )
+            for lang_code in self.lm.available_lang["available_lang"]:
+                builder.button(text=f"{self.lm.available_lang['languages'][lang_code]}({lang_code})")
         elif key == 'model':
-            markup.add(*[KeyboardButton(x) for x in self.gpt.models])
+            for model in self.gpt.models:
+                builder.button(text=model)
         elif key == 'size':
-            markup.add(*[KeyboardButton(x) for x in self.valid_sizes])
+            for size in self.valid_sizes:
+                builder.button(text=size)
+        markup = builder.as_markup()
         return markup
