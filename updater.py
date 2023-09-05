@@ -52,12 +52,11 @@ class SelfUpdating:
                     changed_files.append(file)
         # Delete temp dir
         os.removedirs(temp_dir)
-        # Update version
         self.current_version = self.get_current_version()
         
     def get_current_version(self):
         # Return current version somehow
-        return "0.3"
+        return "0.4"
 
     def get_latest_tag_from_github(self,repo_url):
         api_url = f"https://api.github.com/repos/{repo_url}/releases/latest"

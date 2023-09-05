@@ -2,9 +2,9 @@ import requests
 import openai
 
 class ChatGPT:
-    def __init__(self,api_key):
+    def __init__(self,api_key,api_base):
         openai.api_key = api_key
-        openai.api_base = "https://chimeragpt.adventblocks.cc/api/v1"
+        openai.api_base = api_base
         self.fetch_models_url = 'https://chimeragpt.adventblocks.cc/api/v1/models'
         self.models = []
         self.headers = {
@@ -45,7 +45,8 @@ class ChatGPT:
             response = openai.ChatCompletion.create(
                     model=model,
                     messages=messages,
-                    functions=function
+                    functions=function,
+                    Stream = True
                 )
             text = response
         except Exception as e:
