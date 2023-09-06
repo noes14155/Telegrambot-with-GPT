@@ -26,7 +26,7 @@ class ChatGPT:
 
         return self.models
 
-    async def generate_response(
+    def generate_response(
         self, instruction, plugin_result, history, prompt, function=[], model='gpt-3.5-turbo'
     ):
         text = ''
@@ -42,22 +42,24 @@ class ChatGPT:
             ]
         
         try:
-            response = openai.ChatCompletion.create(
+            response_stream = openai.ChatCompletion.create(
                     model=model,
                     messages=messages,
                     functions=function,
-                    Stream = True
+                    stream = True
                 )
-            text = response
+            for response in response_stream:
+                yield response
         except Exception as e:
             text = f'model not available ```{e}```'
             if "rate limit" in text.lower():
                 print(f"Rate limit on {model}, retrying with another model")
                 model = 'gpt-4' if model == 'gpt-3.5-turbo' else 'gpt-3.5-turbo'
-                return await self.generate_response(instruction, plugin_result, history, prompt, model)
+                #async for self.generate_response(instruction, plugin_result, history, prompt, model):
+                #    yield response
         if text == '':
             text = 'Failed to generate a response using the selected model'
-        return text
+        yield text
     
    
   

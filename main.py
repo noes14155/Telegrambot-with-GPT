@@ -191,20 +191,12 @@ async def chat_handler(call: types.Message):
         await call.reply("Direct messages are disabled by bot owner")
         return
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response = await service.chat(call=call)
-        
-    await bot.send_chat_action(chat_id=call.chat.id, action="typing")
+    response_stream = service.chat(call=call)
     text = ''
-    
-    text = service.escape_markdown(response)
-    await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text, parse_mode='MarkdownV2')
+    for response in response_stream:
+       text += service.escape_markdown(response)
+       await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text, parse_mode='MarkdownV2')
         
-    #await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    #response = await service.chat(call=call)
-    #await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    #response = service.escape_markdown(response)
-    #await bot.send_message(chat_id=call.chat.id, text=response, parse_mode='MarkdownV2')
-
 
 @dp.message(F.content_type.in_({'voice','audio'}))
 async def voice_handler(call: types.Message):
