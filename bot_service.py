@@ -205,7 +205,7 @@ class BotService:
         return photo, markup
 
     
-    def chat(self, call):
+    async def chat(self, call):
         user_id = call.from_user.id
         user_message = call.text
         user = call.from_user
@@ -223,43 +223,59 @@ class BotService:
             role, content = row
             history.append({"role": role, "content": content})
         
-        #web_text = await self.ws.extract_text_from_website(user_message)
-        #if web_text is not None:
-        #    prompt = web_text
-        #yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
-        #if yt_transcript is not None:
-        #    prompt = yt_transcript
+        web_text = await self.ws.extract_text_from_website(user_message)
+        if web_text is not None:
+            prompt = web_text
+        yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
+        if yt_transcript is not None:
+            prompt = yt_transcript
         EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
         bot_messages["bot_prompt"] += f"You should reply to the user in {lm} as a native. Even if the user queries in another language reply only in {lm}. Completely translated."
         bot_messages["bot_prompt"] += f"/n Always stay in character as {persona}"
         function = self.plugin.get_functions_specs() if self.PLUGINS else []
+        collected_chunks = []
+        should_exit = False
+        fn_name = ''
+        arguments = ''
         response_stream = self.gpt.generate_response(
-            bot_messages['bot_prompt'], EXTRA_PROMPT, history, prompt,function=function, model=model
+            bot_messages["bot_prompt"], bot_messages["EXTRA_PROMPT"], history, prompt,function=function, model=model
         )
         for text in response_stream:
             if isinstance(text, str):
                 yield text
-            text = text["choices"][0]["message"]
-            if text['content']:
+                should_exit = True
+                break
+            text = text["choices"][0]["delta"]
+            if 'function_call' in text:
+                if 'name' in text["function_call"]:
+                    fn_name += text["function_call"]["name"]
+                    continue
+                arguments += text["function_call"]["arguments"]
+            elif 'content' in text:
                 text = text['content']
                 yield text
-        fn_name = text["function_call"]["name"]
-        arguments = text["function_call"]["arguments"]
-        result = self.plugin.call_function(fn_name,arguments)
+                should_exit = True
+            else:
+                yield text
+        if should_exit:
+            return      
+                
+        print(fn_name,arguments)
+        result = await self.plugin.call_function(fn_name,arguments)
         for i in range(3):
             response_stream = self.gpt.generate_response(
             bot_messages["bot_prompt"], result, history, prompt, model=model
             )
             for text in response_stream:
                 try:
-                    text = text["choices"][0]["message"]['content']
+                    text = text["choices"][0]["delta"]['content']
                     yield text
                 except:
                     print(text,' Retrying after 3 seconds')
                     time.sleep(3)
-                    continue
+                    break
                         
         self.db.insert_history(user_id=user_id, role="user", content=user_message)
         self.db.insert_history(user_id=user_id, role="assistant", content=text)

@@ -1,3 +1,5 @@
+from typing import Optional
+from telebot import types
 import os
 import asyncio
 import aiogram.types as types
@@ -5,9 +7,22 @@ import speech_recognition as sr
 from pydub import AudioSegment
 
 class VoiceTranscript:
+    """
+    The `VoiceTranscript` class is responsible for transcribing audio files using the Google Speech Recognition API.
+    It provides methods to download audio files, convert them to the required format, and transcribe the audio content.
+    """
+
     def __init__(self):
         self.rec = sr.Recognizer()
-    async def transcribe_audio(self, audio_file_path, lang):
+
+    async def transcribe_audio(self, audio_file_path: str, lang: str) -> Optional[str]:
+        """
+        Converts the audio file to WAV format, transcribes the audio content using the Google Speech Recognition API,
+        and returns the transcription as a string.
+        :param audio_file_path: The path of the audio file to transcribe.
+        :param lang: The language code for the transcription.
+        :return: The transcription as a string, or None if there was an error during transcription.
+        """
         try:
             wav_file_path = audio_file_path.replace(".ogg", ".wav")
             audio = AudioSegment.from_ogg(audio_file_path)
@@ -20,7 +35,13 @@ class VoiceTranscript:
         except Exception as e:
             print(f"Error during audio transcription: {str(e)}")
             return None
-    async def download_file(self, message: types.Message):
+
+    async def download_file(self, message: types.Message) -> Optional[str]:
+        """
+        Downloads the audio file specified in the `message` object and returns the file path as a string.
+        :param message: The message object containing the audio file.
+        :return: The file path as a string, or None if there was an error during file download.
+        """
         try:
             if message.audio is not None:
                 file = message.audio
@@ -41,17 +62,3 @@ class VoiceTranscript:
         except Exception as e:
             print(f"Error during file download: {str(e)}")
             return None
-async def main():
-    voice_transcript = VoiceTranscript()
-    file_path = await voice_transcript.download_file(message)
-    if file_path is not None:
-        transcription = await voice_transcript.transcribe_audio(file_path, lang)
-        if transcription is not None:
-            print(f"Transcription: {transcription}")
-        else:
-            print("Failed to transcribe audio.")
-    else:
-        print("Failed to download file.")
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
