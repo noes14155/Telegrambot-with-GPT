@@ -209,6 +209,7 @@ class BotService:
         user_id = call.from_user.id
         user_message = call.text
         user = call.from_user
+        self.db.insert_history(user_id=user_id, role="user", content=user_message)
         bot_messages = self.lm.local_messages(user_id=user_id)
         lang, persona, model = self.db.get_settings(user_id)
         self.lm.available_lang["languages"].get(
@@ -260,6 +261,7 @@ class BotService:
             else:
                 yield text
         if should_exit:
+            self.db.insert_history(user_id=user_id, role="assistant", content=text)
             return      
                 
         print(fn_name,arguments)
@@ -277,7 +279,7 @@ class BotService:
                     time.sleep(3)
                     break
                         
-        self.db.insert_history(user_id=user_id, role="user", content=user_message)
+        
         self.db.insert_history(user_id=user_id, role="assistant", content=text)
 
         

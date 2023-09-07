@@ -194,10 +194,11 @@ async def chat_handler(call: types.Message):
     response_stream = service.chat(call=call)
     text = ''
     async for response in response_stream:
-       text += response
-       if text == '':
-           continue
-       await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text)
+       if isinstance(response, str):
+            text += response
+            if text == '':
+                continue
+            await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text)
         
 
 @dp.message(F.content_type.in_({'voice','audio'}))

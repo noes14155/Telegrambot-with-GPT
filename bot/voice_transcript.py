@@ -1,5 +1,4 @@
 from typing import Optional
-from telebot import types
 import os
 import asyncio
 import aiogram.types as types

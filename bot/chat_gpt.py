@@ -56,39 +56,36 @@ class ChatGPT:
         Yields:
             str: Each message in the response stream.
         """
-        text = ''
-        if not model.startswith('gpt'):
-            plugin_result = ''
-            function = []
-            print('Unsupported model. Plugins not used')
+        while True:  
+            text = ''
+            if not model.startswith('gpt'):
+                plugin_result = ''
+                function = []
+                print('Unsupported model. Plugins not used')
 
-        messages = [
-            {"role": "system", "content": plugin_result},
-            {"role": "system", "content": instruction},
-            *history,
-            {"role": "user", "content": prompt},
-        ]
+            messages = [
+                {"role": "system", "content": plugin_result},
+                {"role": "system", "content": instruction},
+                *history,
+                {"role": "user", "content": prompt},
+            ]
 
-        try:
-            response_stream = openai.ChatCompletion.create(
-                model=model,
-                messages=messages,
-                functions=function,
-                stream=True
-            )
-            for response in response_stream:
-                yield response
-        except Exception as e:
-            text = f'model not available ```{e}```'
-            if "rate limit" in text.lower():
-                print(f"Rate limit on {model}, retrying with another model")
-                model = 'gpt-4' if model == 'gpt-3.5-turbo' else 'gpt-3.5-turbo'
-                # async for self.generate_response(instruction, plugin_result, history, prompt, model):
-                #     yield response
-
-        if text == '':
-            text = 'Failed to generate a response using the selected model'
-        yield text
+            try:
+                response_stream = openai.ChatCompletion.create(
+                    model=model,
+                    messages=messages,
+                    functions=function,
+                    stream=True
+                )
+                for response in response_stream:
+                    yield response
+            except Exception as e:
+                text = f'model not available ```{e}```'
+                if "rate limit" in text.lower():
+                    print(f"Rate limit on {model}, retrying with another model")
+                    model = 'gpt-4' if model == 'gpt-3.5-turbo' else 'gpt-3.5-turbo'
+                    continue
+                yield text
     
    
   
