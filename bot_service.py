@@ -238,25 +238,26 @@ class BotService:
         function = self.plugin.get_functions_specs() if self.PLUGINS else []
         collected_chunks = []
         should_exit = False
-        fn_name = ''
-        arguments = ''
+        fn_name = arguments = text =  ''
         response_stream = self.gpt.generate_response(
             bot_messages["bot_prompt"], bot_messages["EXTRA_PROMPT"], history, prompt,function=function, model=model
         )
-        for text in response_stream:
-            if isinstance(text, str):
-                yield text
+        for responses in response_stream:
+            if isinstance(responses, str):
+                text += responses
+                yield responses
                 should_exit = True
-                break
-            text = text["choices"][0]["delta"]
-            if 'function_call' in text:
-                if 'name' in text["function_call"]:
-                    fn_name += text["function_call"]["name"]
+                continue
+            response = responses["choices"][0]["delta"]
+            if 'function_call' in response:
+                if 'name' in response["function_call"]:
+                    fn_name += response["function_call"]["name"]
                     continue
-                arguments += text["function_call"]["arguments"]
-            elif 'content' in text:
-                text = text['content']
-                yield text
+                arguments += response["function_call"]["arguments"]
+            elif 'content' in response:
+                response = response['content']
+                text += response
+                yield response
                 should_exit = True
             else:
                 yield text
@@ -278,6 +279,8 @@ class BotService:
                     print(text,' Retrying after 3 seconds')
                     time.sleep(3)
                     break
+            if isinstance(response_stream,str):
+                yield response_stream
                         
         
         self.db.insert_history(user_id=user_id, role="assistant", content=text)
@@ -389,7 +392,8 @@ class BotService:
                 builder.button(text=f"{self.lm.available_lang['languages'][lang_code]}({lang_code})")
         elif key == 'model':
             for model in self.gpt.models:
-                builder.button(text=model)
+                if model.startswith('gpt'):
+                    builder.button(text=model)
         elif key == 'size':
             for size in self.valid_sizes:
                 builder.button(text=size)

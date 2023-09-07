@@ -14,11 +14,13 @@ class ChatGPT:
         openai.api_key = api_key
         openai.api_base = api_base
         self.fetch_models_url = 'https://chimeragpt.adventblocks.cc/api/v1/models'
-        self.models = []
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
+        self.models = []
+        self.fetch_chat_models()
+        
 
     def fetch_chat_models(self) -> List[str]:
         """
@@ -30,6 +32,7 @@ class ChatGPT:
         response = requests.get(self.fetch_models_url, headers=self.headers)
         if response.status_code == 200:
             models_data = response.json()
+            self.models = []
             for model in models_data.get('data'):
                 if "chat" in model['endpoints'][0]:
                     self.models.append(model['id'])
@@ -58,6 +61,7 @@ class ChatGPT:
         """
         while True:  
             text = ''
+            models_index = 0
             if not model.startswith('gpt'):
                 plugin_result = ''
                 function = []
@@ -77,15 +81,18 @@ class ChatGPT:
                     functions=function,
                     stream=True
                 )
-                for response in response_stream:
-                    yield response
+                return response_stream
             except Exception as e:
                 text = f'model not available ```{e}```'
                 if "rate limit" in text.lower():
-                    print(f"Rate limit on {model}, retrying with another model")
-                    model = 'gpt-4' if model == 'gpt-3.5-turbo' else 'gpt-3.5-turbo'
+                    print(f"Rate limit on {model}")
+                    models_index += 1
+                    if models_index >= len(self.models):
+                        models_index = 0
+                    model = self.models[models_index]
+                    print(f"retrying with {model}")
                     continue
-                yield text
+                return text
     
    
   
