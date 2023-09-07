@@ -202,8 +202,14 @@ async def chat_handler(call: types.Message):
             text += response
             if text == '': continue
             chunk += 1
-            if chunk < 5: continue
-            await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text)
+            if chunk > 10:
+                chunk = 0
+            else:
+                continue
+            try:
+                await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text)
+            except:
+                continue
         
 
 @dp.message(F.content_type.in_({'voice','audio'}))
