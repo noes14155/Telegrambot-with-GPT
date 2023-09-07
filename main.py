@@ -3,14 +3,13 @@ import logging
 import os
 import random
 from updater import SelfUpdating
-from io import BytesIO
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.context import FSMContext
 from aiogram.enums.chat_type import ChatType
-from aiogram.enums.chat_action import ChatAction
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Command
+from aiogram.types import FSInputFile, URLInputFile
 from functools import wraps
 
 import bot_service
@@ -145,8 +144,8 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
     if markup == None:
         waiting_id = await create_waiting_message(chat_id=call.chat.id)
         await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
-        photo = open(filename, "rb")
-        await bot.send_photo(chat_id=call.chat.id, photo=photo)
+        photo = FSInputFile(filename)
+        await bot.send_photo(chat_id=call.chat.id,photo=photo)
         await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
         os.remove(filename)
         await state.clear()
@@ -162,7 +161,11 @@ async def select_size_handler(call: types.Message, state: FSMContext):
         waiting_id = await create_waiting_message(chat_id=call.chat.id)
         await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
         filename, markup = await service.select_size( user_id=call.from_user.id, user_message=call.text, state=state)
-        await bot.send_photo(chat_id=call.chat.id, photo=filename, reply_markup=markup)
+        if filename.startswith('http'):
+            photo = URLInputFile(filename)
+            await bot.send_photo(chat_id=call.chat.id, photo=photo, reply_markup=markup)
+        else:
+            await bot.send_message(chat_id=call.chat.id, text=filename, reply_markup=markup)
         await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
         await state.clear()
     else:
@@ -193,11 +196,13 @@ async def chat_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
     response_stream = service.chat(call=call)
     text = ''
+    chunk = 0
     async for response in response_stream:
        if isinstance(response, str):
             text += response
-            if text == '':
-                continue
+            if text == '': continue
+            chunk += 1
+            if chunk < 5: continue
             await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=text)
         
 
