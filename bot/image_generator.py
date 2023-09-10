@@ -5,13 +5,13 @@ import gradio as gr
 from gradio_client import Client
 import threading
 import  openai
-import io
+import time
 
 class ImageGenerator:
     def __init__(self, HG_IMG2TEXT):
         self.HG_IMG2TEXT = HG_IMG2TEXT
         def load_gradio():
-            gr.load("models/stabilityai/stable-diffusion-2-1").launch(server_port=7860)
+            gr.load("models/stabilityai/stable-diffusion-2-1").launch(server_port=7861)
 
         gradio_thread = threading.Thread(target=load_gradio)
         gradio_thread.start()
@@ -45,18 +45,26 @@ class ImageGenerator:
                         return f"Error: {await resp2.text()}"
 
     async def generate_image(prompt):
-        client = Client("http://127.0.0.1:7860/")
+        client = Client("http://127.0.0.1:7861/")
         text = client.predict(prompt, api_name="/predict" )
         return text
     
     async def dalle_generate(self, prompt, size):
-        response = openai.Image.create(
-            prompt=prompt,
-            size=size
-        )
+        retry = 0
+        while True:
+            try:
+                response = openai.Image.create(
+                    prompt=prompt,
+                    size=size
+                )
+                break
+            except Exception as e:
+                retry += 1
+                time.sleep(3)
+                print('Image generation failed retrying after 3 seconds')
+                if retry > 5: continue
+                else:
+                    print(e)
+                    return e
         image_url = response["data"][0]["url"]
-        async with aiohttp.ClientSession() as session:
-            async with session.get(image_url) as response:
-                content = await response.content.read()
-                img_file = io.BytesIO(content)
-                return img_file
+        return image_url
