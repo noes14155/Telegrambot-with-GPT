@@ -19,7 +19,8 @@ from bot import (
     voice_transcript,
     web_search,
     yt_transcript,
-    chat_gpt
+    chat_gpt,
+    g4f_server,
 )
 
 
@@ -74,11 +75,10 @@ class BotService:
         for plugin in self.plugins_dict:
             self.plugins_string += f"\n{plugin}: {self.plugins_dict[plugin]}"
         self.PLUGIN_PROMPT = self.lm.plugin_lang["PLUGIN_PROMPT"] + self.plugins_string
-        if self.CHIMERAGPT_KEY != None:
-            self.gpt.fetch_chat_models()
             
         self.personas = {}
         self.valid_sizes = ['256x256','512x512','1024x1024']
+    #    self.g4f = g4f_server.g4f_server()
 
     def validate_token(self,bot_token):
                 url = f"https://api.telegram.org/bot{bot_token}/getMe"

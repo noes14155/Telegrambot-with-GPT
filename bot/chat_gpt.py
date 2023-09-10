@@ -13,7 +13,7 @@ class ChatGPT:
         """
         openai.api_key = api_key
         openai.api_base = api_base
-        self.fetch_models_url = 'https://chimeragpt.adventblocks.cc/api/v1/models'
+        self.fetch_models_url = 'https://api.naga.ac/v1/models'
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
@@ -25,7 +25,6 @@ class ChatGPT:
     def fetch_chat_models(self) -> List[str]:
         """
         Fetches available chat models from the API and stores their IDs in the `models` field.
-
         Returns:
             List[str]: A list of available chat model IDs.
         """
@@ -38,7 +37,6 @@ class ChatGPT:
                     self.models.append(model['id'])
         else:
             print(f"Failed to fetch chat models. Status code: {response.status_code}")
-
         return self.models
 
     def generate_response(

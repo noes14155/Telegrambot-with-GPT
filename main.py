@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import random
+import subprocess
 from updater import SelfUpdating
 from aiogram import Bot, Dispatcher, types, Router, F
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -282,8 +283,13 @@ async def set_commands(user_id):
 
 
 async def main():
-    await asyncio.gather(set_commands(None), dp.start_polling(bot))
-
+    
+    try:
+        filename = 'bot/g4f_server.py'
+        process = subprocess.Popen(["python", filename], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        await asyncio.gather(set_commands(None), dp.start_polling(bot))
+    except subprocess.CalledProcessError as e:
+        print(f"Error executing {filename}: {e}")
 
 if __name__ == "__main__":
     updater.check_for_update()
