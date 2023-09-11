@@ -16,7 +16,7 @@ from aiogram.filters import Command
 from functools import wraps
 
 import bot_service
-from bot import g4f_server
+
 from replit_detector import ReplitFlaskApp
 
 service = bot_service.BotService()
