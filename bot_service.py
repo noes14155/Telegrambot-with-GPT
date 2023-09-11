@@ -40,7 +40,7 @@ class BotService:
             exit
         self.HG_TOKEN = os.getenv("HG_TOKEN")
         try:
-            self.CHIMERAGPT_KEY = os.getenv("CHIMERAGPT_KEY")
+            self.GPT_KEY = os.getenv("GPT_KEY")
         except:
             print(Fore.RED,'Please add your chimeragpt apikey in your env file')
             exit
@@ -53,7 +53,7 @@ class BotService:
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
         self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")       
         self.PLUGINS = bool(os.environ.get("PLUGINS", True))
-        self.API_BASE = os.environ.get("API_BASE", 'https://chimeragpt.adventblocks.cc/api/v1')
+        self.API_BASE = os.environ.get("API_BASE", 'https://api.naga.ac/')
         
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
@@ -65,7 +65,7 @@ class BotService:
         self.yt = yt_transcript.YoutubeTranscript()
         self.ft = file_transcript.FileTranscript()
         self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT)
-        self.gpt = chat_gpt.ChatGPT(self.CHIMERAGPT_KEY,self.API_BASE)
+        self.gpt = chat_gpt.ChatGPT(self.GPT_KEY,self.API_BASE)
         self.ocr = ocr.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
         self.db.create_tables()
         self.plugin = plugin_manager.PluginManager()
@@ -75,10 +75,11 @@ class BotService:
         for plugin in self.plugins_dict:
             self.plugins_string += f"\n{plugin}: {self.plugins_dict[plugin]}"
         self.PLUGIN_PROMPT = self.lm.plugin_lang["PLUGIN_PROMPT"] + self.plugins_string
-            
+        if self.GPT_KEY:
+            self.gpt.models = self.gpt.fetch_chat_models()
         self.personas = {}
         self.valid_sizes = ['256x256','512x512','1024x1024']
-    #    self.g4f = g4f_server.g4f_server()
+        
 
     def validate_token(self,bot_token):
                 url = f"https://api.telegram.org/bot{bot_token}/getMe"

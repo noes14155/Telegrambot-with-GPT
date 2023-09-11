@@ -13,7 +13,7 @@ class ChatGPT:
         """
         openai.api_key = api_key
         openai.api_base = api_base
-        self.fetch_models_url = 'https://api.naga.ac/v1/models'
+        self.fetch_models_url = f'{api_base}/models'
         self.headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
