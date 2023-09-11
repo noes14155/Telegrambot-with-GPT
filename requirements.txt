@@ -28,6 +28,3 @@ gtts
 pytube
 whois
 spotipy
-flask_cors
-watchdog~=3.0.0
-g4f
