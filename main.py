@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 import random
+import subprocess
+import sys
 from updater import SelfUpdating
 from io import BytesIO
 from aiogram import Bot, Dispatcher, types, Router, F
@@ -14,6 +16,7 @@ from aiogram.filters import Command
 from functools import wraps
 
 import bot_service
+from bot import g4f_server
 from replit_detector import ReplitFlaskApp
 
 service = bot_service.BotService()
@@ -269,11 +272,17 @@ async def set_commands(user_id):
     
     await bot.delete_my_commands()
     await bot.set_my_commands(commands)
-
+async def run_flask():
+  process = await asyncio.create_subprocess_exec(
+      'python', 'bot/g4f_server.py', 
+     stdout=asyncio.subprocess.PIPE,
+     stderr=asyncio.subprocess.PIPE
+  )
+  return_code = await process.wait()
 
 async def main():
+    #g4f = g4f_server.g4f_server()
     await asyncio.gather(set_commands(None), dp.start_polling(bot))
-
 
 if __name__ == "__main__":
     updater.check_for_update()

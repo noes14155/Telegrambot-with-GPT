@@ -5,7 +5,8 @@ class ChatGPT:
     def __init__(self,api_key,api_base):
         openai.api_key = api_key
         openai.api_base = api_base
-        self.fetch_models_url = 'https://chimeragpt.adventblocks.cc/api/v1/models'
+
+        self.fetch_models_url = f'{api_base}/models'
         self.models = []
         self.headers = {
             'Authorization': f'Bearer {api_key}',

@@ -122,8 +122,12 @@ To run this project, you will need to create a .env file or rename the existing 
 - `BOT_TOKEN`
 Get this by messaging @botfather Refer to [📖 Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
 
-- `CHIMERAGPT_KEY`
-Get this by messaging run the /key get command in any text channel in [Chimera GPT Telegram](https://discord.gg/chimeragpt) , [Chimera GPT Telegram](https://t.me/chimer_ai)
+- `API_BASE`
+You can use any provider. I have included Naga AI api base. Use te key for the same.
+
+- `GPT_KEY`
+Key from the provider (including openai). Whichever api base you use Use the same key.
+For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/chimer_ai)
 
 - `HG_TOKEN`
 Optional(Required for image captioning). Sign up on hugging face and get the token from  [🔗 Hugging Face](https://huggingface.co/settings/tokens).      
