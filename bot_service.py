@@ -238,36 +238,54 @@ class BotService:
         bot_messages["bot_prompt"] += f"You should reply to the user in {lm} as a native. Even if the user queries in another language reply only in {lm}. Completely translated."
         bot_messages["bot_prompt"] += f"/n Always stay in character as {persona}"
         function = self.plugin.get_functions_specs() if self.PLUGINS else []
-        text = await self.gpt.generate_response(
-            bot_messages['bot_prompt'], EXTRA_PROMPT, history, prompt,function=function, model=model
+        collected_chunks = []
+        should_exit = False
+        fn_name = arguments = text =  ''
+        response_stream = self.gpt.generate_response(
+            bot_messages["bot_prompt"], bot_messages["EXTRA_PROMPT"], history, prompt,function=function, model=model
         )
-        
-        if isinstance(text, str):
-             return text
-        text = text["choices"][0]["message"]
-        if text['content']:
-            text = text['content']
-        else:
-            fn_name = text["function_call"]["name"]
-            arguments = text["function_call"]["arguments"]
-            result = await self.plugin.call_function(fn_name,arguments)
-            for i in range(3):
-                text = await self.gpt.generate_response(
-                bot_messages["bot_prompt"], result, history, prompt, model=model
-                )
+        for responses in response_stream:
+            if isinstance(responses, str):
+                text += responses
+                yield responses
+                should_exit = True
+                continue
+            response = responses["choices"][0]["delta"]
+            if 'function_call' in response:
+                if 'name' in response["function_call"]:
+                    fn_name += response["function_call"]["name"]
+                    continue
+                arguments += response["function_call"]["arguments"]
+            elif 'content' in response:
+                response = response['content']
+                text += response
+                yield response
+                should_exit = True
+            else:
+                yield response
+        if should_exit:
+            self.db.insert_history(user_id=user_id, role="assistant", content=text)
+            return      
+                
+        print(fn_name,arguments)
+        result = await self.plugin.call_function(fn_name,arguments)
+        for i in range(3):
+            response_stream = self.gpt.generate_response(
+            bot_messages["bot_prompt"], result, history, prompt, model=model
+            )
+            for text in response_stream:
                 try:
-                    text = text["choices"][0]["message"]['content']
-                    break
+                    text = text["choices"][0]["delta"]['content']
+                    yield text
                 except:
                     print(text,' Retrying after 3 seconds')
                     time.sleep(3)
-                    continue
+                    break
+            if isinstance(response_stream,str):
+                yield response_stream
 
-        self.db.insert_history(user_id=user_id, role="user", content=user_message)
+
         self.db.insert_history(user_id=user_id, role="assistant", content=text)
-
-        return text
-
     async def voice(self, user_id, file):
         lang, persona, model = self.db.get_settings(user_id)
         bot_messages = self.lm.local_messages(user_id=user_id)
@@ -373,7 +391,8 @@ class BotService:
                 builder.button(text=f"{self.lm.available_lang['languages'][lang_code]}({lang_code})")
         elif key == 'model':
             for model in self.gpt.models:
-                builder.button(text=model)
+                if model.startswith('gpt'):
+                    builder.button(text=model)
         elif key == 'size':
             for size in self.valid_sizes:
                 builder.button(text=size)

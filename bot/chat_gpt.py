@@ -1,5 +1,6 @@
 import requests
 import openai
+from typing import List, Dict, Any, Generator
 
 class ChatGPT:
     def __init__(self,api_key,api_base):
@@ -27,38 +28,51 @@ class ChatGPT:
 
         return self.models
 
-    async def generate_response(
-        self, instruction, plugin_result, history, prompt, function=[], model='gpt-3.5-turbo'
-    ):
-        text = ''
-        if not model.startswith('gpt'):
-            plugin_result = '' 
-            function = []
-            print('Unsupported model. Plugins not used')
-        messages = [
+    def generate_response(
+        self, instruction: str, plugin_result: str, history: List[Dict[str, str]], prompt: str,
+        function: List[Dict[str, Any]] = [], model: str = 'gpt-3.5-turbo'
+    ) -> Generator[str, None, None]:
+        """
+        Generates a response using the selected model and input parameters.
+        Args:
+            instruction (str): The instruction for generating the response.
+            plugin_result (str): The plugin result.
+            history (List[Dict[str, str]]): The chat history.
+            prompt (str): The user prompt.
+            function (List[Dict[str, Any]]): The functions to be used.
+            model (str): The selected model.
+        Yields:
+            str: Each message in the response stream.
+        """
+        while True:  
+            text = ''
+            models_index = 0
+            if not model.startswith('gpt'):
+                plugin_result = ''
+                function = []
+                print('Unsupported model. Plugins not used')
+            messages = [
                 {"role": "system", "content": plugin_result},
                 {"role": "system", "content": instruction},
                 *history,
                 {"role": "user", "content": prompt},
             ]
-        
-        try:
-            response = openai.ChatCompletion.create(
+            try:
+                response_stream = openai.ChatCompletion.create(
                     model=model,
                     messages=messages,
                     functions=function,
-                    Stream = True
+                    stream=True
                 )
-            text = response
-        except Exception as e:
-            text = f'model not available ```{e}```'
-            if "rate limit" in text.lower():
-                print(f"Rate limit on {model}, retrying with another model")
-                model = 'gpt-4' if model == 'gpt-3.5-turbo' else 'gpt-3.5-turbo'
-                return await self.generate_response(instruction, plugin_result, history, prompt, model)
-        if text == '':
-            text = 'Failed to generate a response using the selected model'
-        return text
-    
-   
-  
+                return response_stream
+            except Exception as e:
+                text = f'model not available ```{e}```'
+                if "rate limit" in text.lower():
+                    print(f"Rate limit on {model}")
+                    models_index += 1
+                    if models_index >= len(self.models):
+                        models_index = 0
+                    model = self.models[models_index]
+                    print(f"retrying with {model}")
+                    continue
+                return text

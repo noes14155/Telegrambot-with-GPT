@@ -9,12 +9,32 @@ from flask_cors import CORS
 
 from g4f import ChatCompletion
 from g4f.Provider import (
+    AItianhu,
+    Acytoo,
     Aichat,
     Ails,
+    Aivvm,
+    Bard,
+    Bing,
+    ChatBase,
     ChatgptAi,
     ChatgptLogin,
+    CodeLinkAva,
+    DeepAi,
+    H2o,
+    HuggingChat,
     Opchatgpts,
-    Wewordle)
+    OpenAssistant,
+    OpenaiChat,
+    Raycast,
+    Theb,
+    Vercel,
+    Vitalentum,
+    Wewordle,
+    Ylokh,
+    You,
+    Yqcloud,
+   )
 
 app = Flask(__name__)
 CORS(app)
@@ -49,12 +69,31 @@ def chat_completions():
     stream = request.get_json().get("stream", False)
     messages = request.get_json().get("messages")
     providers = [
-    Aichat,
-    Ails,
-    ChatgptAi,
+    #AItianhu,
+    #Acytoo,
+    #Aichat,
+    #Ails,
+    Aivvm,
+    #Bard,
+    #Bing,
+    ChatBase,
+    #ChatgptAi,
     ChatgptLogin,
-    Opchatgpts,
-    Wewordle]
+    CodeLinkAva,
+    #DeepAi,
+    #H2o,
+    #HuggingChat,
+    #Opchatgpts,
+    #OpenAssistant,
+    #OpenaiChat,
+    #Raycast,
+    #Theb,
+    #Vercel,
+    Vitalentum,
+    Wewordle,
+    Ylokh,
+    #You,
+    Yqcloud,]
 
     for provider in providers:
         try:
