@@ -105,10 +105,21 @@ python main.py
 
 ## Docker
 Build (change environment variables before build)
+
+Uncomment this section (If yu want to use gpt4free)
 ```bash
-docker build -t telegrambot_gpt4free:latest "." 
+  g4f_server:
+    container_name: g4f_server
+    ports:
+      - '1337:1337'
+    environment:
+      - PYTHONUNBUFFERED=1
+    build:
+      context: ./interference
+      dockerfile: Dockerfile
+    restart: always
 ```
-Docker-compose
+Build containers
 ```bash
 docker-compose up --build -d
 ```
@@ -119,14 +130,17 @@ docker-compose up --build -d
 
 To run this project, you will need to create a .env file or rename the existing example.env to .env and add the following environment variables   
 
+
 - `BOT_TOKEN`
 Get this by messaging @botfather Refer to [📖 Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
 
 - `API_BASE`
-You can use any provider. I have included Naga AI api base. Use te key for the same.
+To use GPT4free API_BASE = 'http://g4f_server:1337' (Only working in docker)
+You can use any provider. I have included Naga AI api base. Use the key for the same.
 
 - `GPT_KEY`
-Key from the provider (including openai). Whichever api base you use Use the same key.
+To use GPT4free GPT_KEY = '' (Only working in docker)
+Key from the provider (including openai). Whichever api base you want use the key provided.
 For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/chimer_ai)
 
 - `HG_TOKEN`

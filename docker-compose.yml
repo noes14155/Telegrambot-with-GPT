@@ -7,3 +7,13 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
+#  g4f_server:
+#    container_name: g4f_server
+#    ports:
+#      - '1337:1337'
+#    environment:
+#      - PYTHONUNBUFFERED=1
+#    build:
+#      context: ./interference
+#      dockerfile: Dockerfile
+#    restart: always

@@ -41,7 +41,7 @@ class BotService:
         try:
             self.GPT_KEY = os.getenv("GPT_KEY")
         except:
-            print(Fore.RED,'Please add your chimeragpt apikey in your env file')
+            print(Fore.RED,'Please add your gpt apikey in your env file')
             exit
         try:
             self.BOT_OWNER_ID = os.getenv("BOT_OWNER_ID")
@@ -52,7 +52,7 @@ class BotService:
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
         self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")       
         self.PLUGINS = bool(os.environ.get("PLUGINS", True))
-        self.API_BASE = os.environ.get("API_BASE", 'https://api.naga.ac/')
+        self.API_BASE = os.environ.get("API_BASE", 'localhost:1337')
         
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
