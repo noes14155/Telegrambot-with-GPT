@@ -9,7 +9,9 @@ from aiogram.fsm.context import FSMContext
 from aiogram.enums.chat_type import ChatType
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Command
+from aiogram.types import FSInputFile, URLInputFile
 from functools import wraps
+from urllib.parse import urlparse
 
 import bot_service
 
@@ -144,7 +146,7 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
     if markup == None:
         waiting_id = await create_waiting_message(chat_id=call.chat.id)
         await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
-        photo = open(filename, "rb")
+        photo = FSInputFile(filename)
         await bot.send_photo(chat_id=call.chat.id, photo=photo)
         await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
         os.remove(filename)
@@ -161,7 +163,12 @@ async def select_size_handler(call: types.Message, state: FSMContext):
         waiting_id = await create_waiting_message(chat_id=call.chat.id)
         await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
         filename, markup = await service.select_size( user_id=call.from_user.id, user_message=call.text, state=state)
-        await bot.send_photo(chat_id=call.chat.id, photo=filename, reply_markup=markup)
+        parsed = urlparse(filename)
+        if parsed.scheme and parsed.netloc:
+            filename = URLInputFile(filename)
+            await bot.send_photo(chat_id=call.chat.id, photo=filename, reply_markup=markup)
+        else: 
+            await bot.send_message(chat_id=call.chat.id, text=filename, reply_markup=markup)
         await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
         await state.clear()
     else:

@@ -56,7 +56,7 @@ class SelfUpdating:
         
     def get_current_version(self):
         # Return current version somehow
-        return "0.4"
+        return "0.5"
 
     def get_latest_tag_from_github(self,repo_url):
         api_url = f"https://api.github.com/repos/{repo_url}/releases/latest"
