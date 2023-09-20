@@ -334,7 +334,7 @@ class BotService:
         should_exit = False
         fn_name = arguments = text =  ''
         self.db.insert_history(user_id=user_id, role="user", content=prompt)
-        rows = self.db.get_history(user_id)[self.MAX_HISTORY:]
+        rows = self.db.get_history(user_id)[-self.MAX_HISTORY:]
         for row in rows:
             role, content = row
             history.append({"role": role, "content": content})
@@ -358,6 +358,9 @@ class BotService:
                 text += response
                 yield response
                 should_exit = True
+            elif 'finish_reason' in response and text == '':
+                should_exit = True
+                yield 'unable to generate a response'
             else:
                 yield response
         if should_exit:

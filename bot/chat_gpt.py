@@ -1,3 +1,4 @@
+import time
 import requests
 import openai
 from typing import List, Dict, Any, Generator
@@ -46,7 +47,6 @@ class ChatGPT:
         """
         while True:  
             text = ''
-            models_index = 0
             if not model.startswith('gpt'):
                 plugin_result = ''
                 function = []
@@ -67,11 +67,7 @@ class ChatGPT:
             except Exception as e:
                 text = f'model not available ```{e}```'
                 if "rate limit" in text.lower():
-                    print(f"Rate limit on {model}")
-                    models_index += 1
-                    if models_index >= len(self.models):
-                        models_index = 0
-                    model = self.models[models_index]
-                    print(f"retrying with {model}")
+                    print(f"Rate limit on {model}. Retrying after 5 seconds")
+                    time.sleep(5)
                     continue
                 return text
