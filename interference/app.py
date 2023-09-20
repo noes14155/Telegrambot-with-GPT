@@ -72,15 +72,15 @@ def chat_completions():
     #AItianhu,
     #Acytoo,
     #Aichat,
-    #Ails,
-    Aivvm,
+    Ails,
+    #Aivvm,
     #Bard,
     #Bing,
     ChatBase,
-    #ChatgptAi,
-    ChatgptLogin,
-    CodeLinkAva,
-    #DeepAi,
+    ChatgptAi,
+    #ChatgptLogin,
+    #CodeLinkAva,
+    DeepAi,
     #H2o,
     #HuggingChat,
     #Opchatgpts,
@@ -91,9 +91,10 @@ def chat_completions():
     #Vercel,
     Vitalentum,
     Wewordle,
-    Ylokh,
+    #Ylokh,
     #You,
-    Yqcloud,]
+    Yqcloud
+    ]
 
     for provider in providers:
         try:

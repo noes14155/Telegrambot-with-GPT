@@ -1,5 +1,5 @@
 from __future__ import annotations
-from .          import models
+from g4f        import models
 from .Provider  import BaseProvider
 from .typing    import Any, CreateResult, Union
 import random
@@ -16,15 +16,17 @@ class ChatCompletion:
         auth     : Union[str, None]                = None, **kwargs: Any) -> Union[CreateResult, str]:
 
         if isinstance(model, str):
-            try:
+            if model in models.ModelUtils.convert:
                 model = models.ModelUtils.convert[model]
-            except KeyError:
+            else:
                 raise Exception(f'The model: {model} does not exist')
 
-
         if not provider:
-            if isinstance(model.best_provider, tuple):
-                provider = random.choice(model.best_provider)
+            if isinstance(model.best_provider, list):
+                if stream:
+                    provider = random.choice([p for p in model.best_provider if p.supports_stream])
+                else:
+                    provider = random.choice(model.best_provider)
             else:
                 provider = model.best_provider
 

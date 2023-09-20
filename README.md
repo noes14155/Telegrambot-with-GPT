@@ -161,19 +161,19 @@ For Naga AI, Get this by messaging run the /key get command in th bot channel in
 To use GPT4free API_BASE = 'http://g4f_server:1337' (Only working in docker)
 You can use any provider. I have included Naga AI api base. Use the key for the same.
 
--`MAX_HISTORY`
+- `MAX_HISTORY`
 Number of conversation history to be sent with each request. Default value 10. Don't put more than 20.      
 
--`ENABLED_PLUGINS`
+- `ENABLED_PLUGINS`
 List of enabled plugins. Only wolfram is disabled by default. Add Worlframalpha api key before adding wolfram to this list.     
 
--`WOLFRAM_APP_ID`
+- `WOLFRAM_APP_ID`
 Wolframalpha api key
 
--`DUCKDUCKGO_SAFESEARCH`
+- `DUCKDUCKGO_SAFESEARCH`
 Valid values are 'safe', 'moderate', 'off'
 
--`WORLDTIME_DEFAULT_TIMEZONE`
+- `WORLDTIME_DEFAULT_TIMEZONE`
 Timezone should be in the format Asia/Dubai or Europe/Rome
       
 

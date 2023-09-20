@@ -29,19 +29,18 @@ from g4f.Provider import (
     
 )
 providers = [
-AItianhu,
-    AItianhu,
+    #AItianhu,
     #Acytoo,
     #Aichat,
-    #Ails,
-    Aivvm,
+    Ails,
+    #Aivvm,
     #Bard,
     #Bing,
     ChatBase,
-    #ChatgptAi,
-    ChatgptLogin,
-    CodeLinkAva,
-    #DeepAi,
+    ChatgptAi,
+    #ChatgptLogin,
+    #CodeLinkAva,
+    DeepAi,
     #H2o,
     #HuggingChat,
     #Opchatgpts,
@@ -52,11 +51,12 @@ AItianhu,
     #Vercel,
     Vitalentum,
     Wewordle,
-    Ylokh,
+    #Ylokh,
     #You,
-    Yqcloud,
+    Yqcloud
     ]
 for provider in providers:
+    print('Trying', provider)
     start_time = time.time()
     try:
         response = g4f.ChatCompletion.create(messages=[{"role": "user", "content": "Hello"}], model = 'gpt-4', provider=provider)
