@@ -1,4 +1,14 @@
-.vscode
 .env
-.gitignore
+chatbot.db
+bot/__pycache__/
+interference/__pycache__/
+plugins/__pycache__/
+__pycache__/
+downloaded_files/
+.vscode/
 venv/
+poetry.lock
+pyproject.toml
+replit.nix
+.replit
+.gitignore

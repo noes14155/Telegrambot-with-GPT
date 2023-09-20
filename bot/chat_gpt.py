@@ -45,6 +45,7 @@ class ChatGPT:
         Yields:
             str: Each message in the response stream.
         """
+        retries = 0
         while True:  
             text = ''
             if not model.startswith('gpt'):
@@ -67,7 +68,11 @@ class ChatGPT:
             except Exception as e:
                 text = f'model not available ```{e}```'
                 if "rate limit" in text.lower():
-                    print(f"Rate limit on {model}. Retrying after 5 seconds")
-                    time.sleep(5)
-                    continue
+                    retries += 1
+                    if retries >= 3:
+                        break
+                    else:
+                        print(f"Rate limit on {model}. Retrying after 5 seconds")
+                        time.sleep(5)
+                        continue
                 return text
