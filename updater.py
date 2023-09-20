@@ -24,12 +24,15 @@ class SelfUpdating:
         temp_dir = "./temp/" 
         if not os.path.exists(temp_dir):
             git.Git(".").clone(self.repo_url, temp_dir)
-
-        # Checkout latest commit
-        repo = git.Repo(temp_dir)
-        repo.git.checkout('master')
-        repo.git.pull()
-        
+        try:
+            # Checkout latest commit
+            repo = git.Repo(temp_dir)
+            repo.git.checkout('master')
+            repo.git.pull()
+        except git.exc.GitCommandError as e:  
+            # Handle pull error
+            print(f"Git pull failed: {e}")
+            return
         # Walk through temp dir
         changed_files = []
         for root, dirs, files in os.walk(temp_dir):
@@ -51,12 +54,16 @@ class SelfUpdating:
                     shutil.copyfile(file_path, destination_path)  
                     changed_files.append(file)
         # Delete temp dir
-        os.removedirs(temp_dir)
+        try:
+            shutil.rmtree(temp_dir)
+        except OSError as e:
+            print(f"Error removing temp dir: {e}")
+            
         self.current_version = self.get_current_version()
         
     def get_current_version(self):
         # Return current version somehow
-        return "0.5"
+        return "0.6"
 
     def get_latest_tag_from_github(self,repo_url):
         api_url = f"https://api.github.com/repos/{repo_url}/releases/latest"

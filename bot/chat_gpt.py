@@ -29,7 +29,7 @@ class ChatGPT:
         return self.models
 
     def generate_response(
-        self, instruction: str, plugin_result: str, history: List[Dict[str, str]], prompt: str,
+        self, instruction: str, plugin_result: str, history: List[Dict[str, str]],
         function: List[Dict[str, Any]] = [], model: str = 'gpt-3.5-turbo'
     ) -> Generator[str, None, None]:
         """
@@ -54,8 +54,7 @@ class ChatGPT:
             messages = [
                 {"role": "system", "content": plugin_result},
                 {"role": "system", "content": instruction},
-                *history,
-                {"role": "user", "content": prompt},
+                *history
             ]
             try:
                 response_stream = openai.ChatCompletion.create(

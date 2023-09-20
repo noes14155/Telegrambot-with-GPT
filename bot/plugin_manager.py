@@ -5,12 +5,10 @@ from plugins.dice import DicePlugin
 from plugins.youtube_audio_extractor import YouTubeAudioExtractorPlugin
 from plugins.ddg_image_search import DDGImageSearchPlugin
 from plugins.ddg_translate import DDGTranslatePlugin
-from plugins.spotify import SpotifyPlugin
 from plugins.crypto import CryptoPlugin
 from plugins.weather import WeatherPlugin
 from plugins.ddg_web_search import DDGWebSearchPlugin
 from plugins.wolfram_alpha import WolframAlphaPlugin
-from plugins.deepl import DeeplTranslatePlugin
 from plugins.worldtimeapi import WorldTimeApiPlugin
 from plugins.whois_ import WhoisPlugin
 from plugins.webshot import WebshotPlugin
@@ -21,24 +19,23 @@ class PluginManager:
     A class to manage the plugins and call the correct functions
     """
 
-    def __init__(self):
+    def __init__(self,plugins):
+        enabled_plugins = plugins.get('plugins', [])
         plugin_mapping = {
-            #'wolfram': WolframAlphaPlugin,
+            'wolfram': WolframAlphaPlugin,
             'weather': WeatherPlugin,
             'crypto': CryptoPlugin,
             'ddg_web_search': DDGWebSearchPlugin,
             'ddg_translate': DDGTranslatePlugin,
             'ddg_image_search': DDGImageSearchPlugin,
-            #'spotify': SpotifyPlugin,
             'worldtimeapi': WorldTimeApiPlugin,
             'youtube_audio_extractor': YouTubeAudioExtractorPlugin,
             'dice': DicePlugin,
-            #'deepl_translate': DeeplTranslatePlugin,
             'gtts_text_to_speech': GTTSTextToSpeech,
             'whois': WhoisPlugin,
             'webshot': WebshotPlugin,
         }
-        self.plugins = [plugin_mapping[plugin]() for plugin in plugin_mapping]
+        self.plugins = [plugin_mapping[plugin]() for plugin in enabled_plugins if plugin in plugin_mapping]
 
     def get_functions_specs(self):
         """

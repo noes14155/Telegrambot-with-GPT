@@ -90,14 +90,16 @@ pip install -r requirements.txt
 6. Install additional dependencies:
 
 + Install Tesseract OCR:
+    - Install using single command 'choco install tesseract' or manually using the following steps.
     - Download the Windows installer from the  [Tesseract OCR GitHub page](https://github.com/UB-Mannheim/tesseract/wiki).
     - Run the installer and make sure to check download Additional script data option in the installation options.
     - Add the Tesseract installation directory to the system's PATH environment variable.
 + Install FFmpeg:
-
-    - Download the latest static build of FFmpeg for Windows from the  [official FFmpeg website](https://ffmpeg.org/download.html#build-windows).
+    - Install using single command 'choco install ffmpeg' or manually using the following steps.
+    - Download the latest static build of FFmpeg for Windows from the  [official FFmpeg website](https://ffmpeg.org/download.html#build-windows) 
     - Extract the downloaded ZIP file to a location of your choice.
     - Add the FFmpeg bin directory to the system's PATH environment variable.
+    
 7. Run the bot:
 ```
 python main.py
@@ -134,18 +136,9 @@ To run this project, you will need to create a .env file or rename the existing 
 - `BOT_TOKEN`
 Get this by messaging @botfather Refer to [📖 Telegram Bot Tutorial](https://core.telegram.org/bots/tutorial#obtain-your-bot-token)
 
-- `API_BASE`
-To use GPT4free API_BASE = 'http://g4f_server:1337' (Only working in docker)
-You can use any provider. I have included Naga AI api base. Use the key for the same.
-
-- `GPT_KEY`
-To use GPT4free GPT_KEY = '' (Only working in docker)
-Key from the provider (including openai). Whichever api base you want use the key provided.
-For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/chimer_ai)
-
 - `HG_TOKEN`
 Optional(Required for image captioning). Sign up on hugging face and get the token from  [🔗 Hugging Face](https://huggingface.co/settings/tokens).      
-      
+
 - `HG_img2text`
 Required for image captioning. If you wnat to use another model for image captioning. change it here.   
 Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'     
@@ -154,7 +147,35 @@ Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesfo
 Change to your language default english. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
 
 - `Plugins`
-Enable or disable plugins. Default value True.        
+Enable or disable plugins. Default value True.    
+
+- `BOT_OWNER_ID`
+Add your userid from telegram. If empty DM enable or disable option will be disabled.     
+
+- `GPT_KEY`
+To use GPT4free GPT_KEY = '' (Only working in docker)
+Key from the provider (including openai). Whichever api base you want use the key provided.
+For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/chimer_ai)     
+
+- `API_BASE`
+To use GPT4free API_BASE = 'http://g4f_server:1337' (Only working in docker)
+You can use any provider. I have included Naga AI api base. Use the key for the same.
+
+-`MAX_HISTORY`
+Number of conversation history to be sent with each request. Default value 10. Don't put more than 20.      
+
+-`ENABLED_PLUGINS`
+List of enabled plugins. Only wolfram is disabled by default. Add Worlframalpha api key before adding wolfram to this list.     
+
+-`WOLFRAM_APP_ID`
+Wolframalpha api key
+
+-`DUCKDUCKGO_SAFESEARCH`
+Valid values are 'safe', 'moderate', 'off'
+
+-`WORLDTIME_DEFAULT_TIMEZONE`
+Timezone should be in the format Asia/Dubai or Europe/Rome
+      
 
 
       

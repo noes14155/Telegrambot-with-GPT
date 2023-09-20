@@ -16,11 +16,11 @@ class VoiceTranscript:
                 audio = self.rec.record(audio_file)
             transcription = self.rec.recognize_google(audio, language=f"{lang}")
             os.remove(wav_file_path)
-            return transcription
+            
         except Exception as e:
-            print(f"Error during audio transcription: {str(e)}")
-            return None
-    async def download_file(self, message: types.Message):
+            transcription = f"Error during audio transcription: {str(e)}"
+        return transcription   
+    async def download_file(self, bot, message: types.Message):
         try:
             if message.audio is not None:
                 file = message.audio
@@ -36,22 +36,8 @@ class VoiceTranscript:
             file_dir = "downloaded_files"
             os.makedirs(file_dir, exist_ok=True)
             full_file_path = os.path.join(file_dir, file_path)
-            await file.download(destination_file=full_file_path)
+            await bot.download(file=file, destination=full_file_path)
             return full_file_path
         except Exception as e:
             print(f"Error during file download: {str(e)}")
             return None
-async def main():
-    voice_transcript = VoiceTranscript()
-    file_path = await voice_transcript.download_file(message)
-    if file_path is not None:
-        transcription = await voice_transcript.transcribe_audio(file_path, lang)
-        if transcription is not None:
-            print(f"Transcription: {transcription}")
-        else:
-            print("Failed to transcribe audio.")
-    else:
-        print("Failed to download file.")
-if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())

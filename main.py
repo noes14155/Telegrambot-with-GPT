@@ -59,9 +59,7 @@ async def delete_waiting_message(chat_id, waiting_id):
 @dp.message(Command("start", "hello"))
 async def start_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response = await service.start(user_id=call.from_user.id)
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    await bot.send_message(chat_id=call.chat.id, text=response)
+    await service.start(call=call, waiting_id=waiting_id, bot=bot)
     await set_commands(user_id=call.from_user.id)
 
 
@@ -76,10 +74,8 @@ async def clear_handler(call: types.Message):
 @dp.message(Command("help"))
 async def help_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response = await service.help(user_id=call.from_user.id)
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    await bot.send_message(chat_id=call.chat.id, text=response)
-
+    await service.help(call=call, waiting_id=waiting_id, bot=bot)
+    
 @dp.message(Command("changepersona"))
 async def persona_handler(call: types.Message, state: FSMContext):
     response, markup = await service.changepersona()
@@ -197,56 +193,26 @@ async def chat_handler(call: types.Message):
         await call.reply("Direct messages are disabled by bot owner")
         return
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response_stream = service.chat(call=call)
-    full_text = sent_text = ''
-    chunk = 0
-
-    async for response in response_stream:
-       if isinstance(response, str):
-            full_text += response
-            if full_text == '': continue
-            chunk += 1
-            if chunk > 10:
-                chunk = 0
-            else:
-                continue
-            try:
-                await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text)
-                sent_text = full_text
-            except:
-                continue
-
-    if full_text != '' and full_text != sent_text:
-        await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text)    
-   
+    await service.chat(call=call, waiting_id=waiting_id, bot=bot)
+    
 
 @dp.message(F.content_type.in_({'voice','audio'}))
 async def voice_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response, transcript = await service.voice(user_id=call.from_user.id, file=call)
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    await call.reply(transcript)
-    await call.reply(response)
+    await service.voice(call=call, waiting_id=waiting_id, bot=bot)
 
 
 @dp.message(F.content_type.in_({'photo'}))
 async def image_handler(call: types.Message):
-    file_info = await bot.get_file(call.photo[-1].file_id)
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response, transcript = await service.image(
-        user_id=call.from_user.id, file_info=file_info
-    )
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    await call.reply(transcript)
-    await call.reply(response)
+    await service.image(call=call, waiting_id=waiting_id, bot=bot)
+    
 
 @dp.message(F.content_type.in_({'document'}))
 async def document_handler(call: types.Message):
     waiting_id = await create_waiting_message(chat_id=call.chat.id)
-    response = await service.document(user_id=call.from_user.id, file=call)
-    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    await call.reply(response)
-
+    await service.document(call=call, waiting_id=waiting_id, bot=bot)
+    
 
 async def set_commands(user_id):
     bot_messages = service.lm.local_messages(user_id=user_id)

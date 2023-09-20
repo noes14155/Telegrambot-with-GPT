@@ -35,9 +35,8 @@ class BotService:
                 print(Fore.RED,'Invalid bot token')
                 exit
         except:
-            print(Fore.RED,'please add your telegram bot token i the env file')
+            print(Fore.RED,'please add your telegram bot token in the env file')
             exit
-        self.HG_TOKEN = os.getenv("HG_TOKEN")
         try:
             self.GPT_KEY = os.getenv("GPT_KEY")
         except:
@@ -48,12 +47,13 @@ class BotService:
         except:
             self.BOT_OWNER_ID = ''
             print(Fore.WHITE,'Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
-        
+        self.HG_TOKEN = os.getenv("HG_TOKEN", '')
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
         self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")       
-        self.PLUGINS = bool(os.environ.get("PLUGINS", True))
-        self.API_BASE = os.environ.get("API_BASE", 'localhost:1337')
-        
+        self.PLUGINS = os.environ.get('PLUGINS', 'true').lower() == 'true'
+        self.MAX_HISTORY = int(os.environ.get("MAX_HISTORY", 15))
+        self.API_BASE = os.environ.get("API_BASE", 'https://api.naga.ac/v1')
+        self.plugin_config = {'plugins': os.environ.get('PLUGINS', '').split(',')}
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
         self.lm = language_manager.LanguageManager(
@@ -65,9 +65,9 @@ class BotService:
         self.ft = file_transcript.FileTranscript()
         self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT)
         self.gpt = chat_gpt.ChatGPT(self.GPT_KEY,self.API_BASE)
-        self.ocr = ocr.OCR(config=" --psm 3 --oem 3 -l script//Devanagari")
+        self.ocr = ocr.OCR(config=" --psm 3 --oem 3")
         self.db.create_tables()
-        self.plugin = plugin_manager.PluginManager()
+        self.plugin = plugin_manager.PluginManager(self.plugin_config)
 
         self.plugins_dict = self.lm.plugin_lang["plugins_dict"]
         self.plugins_string = ""
@@ -94,20 +94,10 @@ class BotService:
                 else:
                     return False
 
-    async def start(self, user_id):
-        bot_messages = self.lm.local_messages(user_id)
-        lang, persona, model = self.db.get_settings(user_id)
-        if lang in self.lm.available_lang["languages"]:
-            language = self.lm.available_lang["languages"][lang]
-        else:
-            language = self.DEFAULT_LANGUAGE
-            model = 'gpt-3.5-turbo-16k'
-            self.db.insert_settings(user_id=user_id)
-        welcome = bot_messages["start"] + f"{language}."
-        response = await self.gpt.generate_response(
-            bot_messages["bot_prompt"], "", history={}, prompt=welcome, model=model
-        )
-        return response
+    async def start(self, call, waiting_id, bot):
+        self.db.insert_settings(user_id=call.from_user.id)
+        await self.chat(call, waiting_id, bot)
+        return
 
     async def clear(self, user_id):
         bot_messages = self.lm.local_messages(user_id=user_id)
@@ -115,18 +105,9 @@ class BotService:
         response = f"🧹 {bot_messages['history_cleared']}"
         return response
 
-    async def help(self, user_id):
-        bot_messages = self.lm.local_messages(user_id=user_id)
-        lang, persona, model = self.db.get_settings(user_id)
-        language = self.lm.available_lang["languages"].get(
-            lang,
-            self.lm.available_lang["languages"]["en"],
-        )
-        help = bot_messages["help"] + f"{language}."
-        response = await self.gpt.generate_response(
-            bot_messages["bot_prompt"], "", history={}, prompt=help, model=model
-        )
-        return response
+    async def help(self, call, waiting_id, bot):
+        await self.chat(call, waiting_id, bot)
+        return
 
     async def lang(self, user_id):
         bot_messages = self.lm.local_messages(user_id=user_id)
@@ -208,115 +189,47 @@ class BotService:
         return photo, markup
 
     
-    async def chat(self, call):
-        user_id = call.from_user.id
-        user_message = call.text
-        user = call.from_user
-        bot_messages = self.lm.local_messages(user_id=user_id)
-        lang, persona, model = self.db.get_settings(user_id)
-        self.lm.available_lang["languages"].get(
-            lang,
-            self.lm.available_lang["languages"]["en"],
-        )
-        lm = self.lm.available_lang["languages"][lang]
-        rows = self.db.get_history(user_id)[-10:]
-        history = []
-        prompt = user_message
-        for row in rows:
-            role, content = row
-            history.append({"role": role, "content": content})
-        
-        web_text = await self.ws.extract_text_from_website(user_message)
-        if web_text is not None:
-            prompt = web_text
-        yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
-        if yt_transcript is not None:
-            prompt = yt_transcript
-        EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
-        if user.first_name is not None:
-            bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
-        bot_messages["bot_prompt"] += f"You should reply to the user in {lm} as a native. Even if the user queries in another language reply only in {lm}. Completely translated."
-        bot_messages["bot_prompt"] += f"/n Always stay in character as {persona}"
-        function = self.plugin.get_functions_specs() if self.PLUGINS else []
-        collected_chunks = []
-        should_exit = False
-        fn_name = arguments = text =  ''
-        response_stream = self.gpt.generate_response(
-            bot_messages["bot_prompt"], bot_messages["EXTRA_PROMPT"], history, prompt,function=function, model=model
-        )
-        for responses in response_stream:
-            if isinstance(responses, str):
-                text += responses
-                yield responses
-                should_exit = True
-                continue
-            response = responses["choices"][0]["delta"]
-            if 'function_call' in response:
-                if 'name' in response["function_call"]:
-                    fn_name += response["function_call"]["name"]
+    async def chat(self, call, waiting_id, bot, process_prompt = ''):
+        full_text = sent_text = ''
+        chunk = 0
+        response_stream = self.__common_generate(call=call, process_prompt=process_prompt)
+        async for response in response_stream:
+           if isinstance(response, str):
+                full_text += response
+                if full_text == '': continue
+                chunk += 1
+                if chunk > 10:
+                    chunk = 0
+                else:
                     continue
-                arguments += response["function_call"]["arguments"]
-            elif 'content' in response:
-                response = response['content']
-                text += response
-                yield response
-                should_exit = True
-            else:
-                yield response
-        if should_exit:
-            self.db.insert_history(user_id=user_id, role="assistant", content=text)
-            return      
-                
-        print(fn_name,arguments)
-        result = await self.plugin.call_function(fn_name,arguments)
-        for i in range(3):
-            response_stream = self.gpt.generate_response(
-            bot_messages["bot_prompt"], result, history, prompt, model=model
-            )
-            for text in response_stream:
                 try:
-                    text = text["choices"][0]["delta"]['content']
-                    yield text
+                    await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text)
+                    sent_text = full_text
                 except:
-                    print(text,' Retrying after 3 seconds')
-                    time.sleep(3)
-                    break
-            if isinstance(response_stream,str):
-                yield response_stream
+                    continue
 
-
-        self.db.insert_history(user_id=user_id, role="assistant", content=text)
-    async def voice(self, user_id, file):
+        if full_text != '' and full_text != sent_text:
+            await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text)    
+        return
+            
+    
+    async def voice(self, call, waiting_id, bot):
+        user_id = call.from_user.id
         lang, persona, model = self.db.get_settings(user_id)
         bot_messages = self.lm.local_messages(user_id=user_id)
-        bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
-        rows = self.db.get_history(user_id)[-10:]
-        history = []
-        for row in rows:
-            role, content = row
-            history.append({"role": role, "content": content})
-        audio_file_path = await self.vt.download_file(file)
+        audio_file_path = await self.vt.download_file(bot, call)
         text = await self.vt.transcribe_audio(audio_file_path, lang=lang)
         transcript = bot_messages["voice_transcribed"] + text
         prompt = bot_messages["voice_prompt"] + text
         os.remove(audio_file_path)
-        response = await self.gpt.generate_response(
-            bot_messages["bot_prompt"], "", history, prompt, model=model
-        )
-        self.db.insert_history(user_id=user_id, role="user", content=text)
-        self.db.insert_history(user_id=user_id, role="assistant", content=response)
+        call.reply(transcript)
+        await self.chat(call, waiting_id, bot, process_prompt=prompt)
+        return
 
-        return response, transcript
-
-    async def image(self, user_id, file_info):
-        lang, persona, model = self.db.get_settings(user_id)
+    async def image(self, call, waiting_id, bot):
+        user_id = call.from_user.id
         bot_messages = self.lm.local_messages(user_id=user_id)
-        bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
-        rows = self.db.get_history(user_id)[-10:]
-        history = []
-        for row in rows:
-            role, content = row
-            history.append({"role": role, "content": content})
+        file_info = await bot.get_file(call.photo[-1].file_id)
         image_url = (
             f"https://api.telegram.org/file/bot{self.BOT_TOKEN}/{file_info.file_path}"
         )
@@ -345,34 +258,19 @@ class BotService:
             text = ocr_text = ""
             prompt = bot_messages["image_couldnt_read_prompt"]
         prompt += bot_messages["image_output_prompt"]
-        response = await self.gpt.generate_response(
-            bot_messages["bot_prompt"], "", history, prompt, model=model
-        )
-        self.db.insert_history(user_id=user_id, role="user", content=text)
-        self.db.insert_history(user_id=user_id, role="assistant", content=response)
+        await self.chat(call, waiting_id, bot, process_prompt=prompt)
+        return
 
-        return response, text
 
-    async def document(self, user_id, file):
-        lang, persona, model = self.db.get_settings(user_id)
+    async def document(self, call, waiting_id, bot):
+        user_id = call.from_user.id
         bot_messages = self.lm.local_messages(user_id=user_id)
-        bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
-        rows = self.db.get_history(user_id)[-10:]
-        history = []
-        for row in rows:
-            role, content = row
-            history.append({"role": role, "content": content})
-        file_path = await self.ft.download_file(file)
+        file_path = await self.ft.download_file(bot, call)
         text = await self.ft.read_document(file_path)
         prompt = bot_messages["document_prompt"] + text
         os.remove(file_path)
-        response = await self.gpt.generate_response(
-            bot_messages["bot_prompt"], "", history, prompt, model=model
-        )
-        self.db.insert_history(user_id=user_id, role="user", content=text)
-        self.db.insert_history(user_id=user_id, role="assistant", content=response)
-
-        return response
+        await self.chat(call, waiting_id, bot, process_prompt=prompt)
+        return
 
     def escape_markdown(self,text):
         escape_chars = ['_', '-', '!', '*', '[', ']', '(', ')', '~', '>', '#', '+', '=', '{','}','|','.']
@@ -398,3 +296,99 @@ class BotService:
                 builder.button(text=size)
         markup = builder.as_markup()
         return markup
+    
+    async def __common_generate(self, call, process_prompt = ''):
+        user_id = call.from_user.id
+        user_message = call.text
+        user = call.from_user
+        bot_messages = self.lm.local_messages(user_id=user_id)
+        lang, persona, model = self.db.get_settings(user_id)
+        self.lm.available_lang["languages"].get(
+            lang,
+            self.lm.available_lang["languages"]["en"],
+        )
+        lm = self.lm.available_lang["languages"][lang]
+        history = []
+        if user_message == "/start":
+            prompt = bot_messages["help"] + f"{lm}."
+        elif user_message == "/help":
+            prompt = bot_messages["help"] + f"{lm}."
+        elif process_prompt != '':
+            prompt = process_prompt
+        else:
+            prompt = user_message
+        
+        
+        web_text = await self.ws.extract_text_from_website(prompt)
+        if web_text is not None:
+            prompt = web_text
+        yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
+        if yt_transcript is not None:
+            prompt = yt_transcript
+        EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
+        if user.first_name is not None:
+            bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
+        bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
+        bot_messages["bot_prompt"] += f"/n Always stay in character as {persona}"
+        function = self.plugin.get_functions_specs() if self.PLUGINS else []
+        should_exit = False
+        fn_name = arguments = text =  ''
+        self.db.insert_history(user_id=user_id, role="user", content=prompt)
+        rows = self.db.get_history(user_id)[self.MAX_HISTORY:]
+        for row in rows:
+            role, content = row
+            history.append({"role": role, "content": content})
+        response_stream = self.gpt.generate_response(
+            bot_messages["bot_prompt"], bot_messages["EXTRA_PROMPT"], history,function=function, model=model
+        )
+        for responses in response_stream:
+            if isinstance(responses, str):
+                text += responses
+                yield responses
+                should_exit = True
+                continue
+            response = responses["choices"][0]["delta"]
+            if 'function_call' in response:
+                if 'name' in response["function_call"]:
+                    fn_name += response["function_call"]["name"]
+                    continue
+                arguments += response["function_call"]["arguments"]
+            elif 'content' in response:
+                response = response['content']
+                text += response
+                yield response
+                should_exit = True
+            else:
+                yield response
+        if should_exit:
+            self.db.insert_history(user_id=user_id, role="assistant", content=text)
+            return      
+                
+        print("Using function ",fn_name, "with arguments ", arguments)
+        result = await self.plugin.call_function(fn_name,arguments)
+        should_exit = False
+        history.append({"role": "function", "name":fn_name, "content": result})
+        for i in range(3):
+            response_stream = self.gpt.generate_response(
+            bot_messages["bot_prompt"], result, history, function, model=model
+            )
+            for responses in response_stream:
+                if isinstance(responses, str):
+                    text += responses
+                    yield responses
+                    should_exit = True
+                    continue
+                response = responses["choices"][0]["delta"]
+                if 'content' in response:
+                    response = response['content']
+                    text += response
+                    yield response
+                    should_exit = True
+                elif 'finish_reason' in response:
+                    break
+                else:
+                    yield response
+            if should_exit:
+                self.db.insert_history(user_id=user_id, role="assistant", content=text)
+                return      
+   
