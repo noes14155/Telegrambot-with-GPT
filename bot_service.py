@@ -188,6 +188,14 @@ class BotService:
         chunk = 0
         user_id = call.from_user.id
         markup = self.generate_keyboard('text_func')
+        try:
+            await bot.edit_message_reply_markup(chat_id=call.chat.id,message_id=self.last_msg_ids[user_id],reply_markup=None) if user_id in self.last_msg_ids else None
+        except:
+            pass
+        self.last_call[user_id] = call
+        self.last_msg_ids[user_id] = waiting_id
+        user_id = call.from_user.id
+        markup = self.generate_keyboard('text_func')
         self.cancel_flag = False
         try:
             await bot.edit_message_reply_markup(chat_id=call.chat.id,message_id=self.last_msg_ids[user_id],reply_markup=None) if user_id in self.last_msg_ids else None
