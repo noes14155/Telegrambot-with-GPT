@@ -118,37 +118,12 @@ image_output_prompt: "
 Generate a response based on the context of an image, even if the image itself is not visible.
 "
 
-# EXTRA
-PLUGIN_PROMPT: "
-You will be given a list of plugins with description.
-                Given a list of plugins with descriptions, determine which plugins to use based on their descriptions.
-                If no plugins are required to answer like the user is trying to have a conversation. Answer with Plugin: False and nothing else.
-                You will provide only the output in the exact format specified below with no explanation or conversation.
-                Ifyou need to use a plugin specify which plugin to use and Query.
-                Example input: What are the latest news in the tech world
-
-                Example output:
-                Plugin: duckduckgonews
-                Query: tech news
-
-                
-                The available plugins are: 
-"
-
 EXTRA_PROMPT: "
 Don't make any assumptions, use the functions. 
-You don't have realtime information, make use of the plugins to reply to the user with realtime information. 
+You don't have realtime information, make use of the functions to reply to the user with realtime information. 
+You have internet access using the functions. Use search functions to get realtime information.
 Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
 Only use the functions you have been provided with.
 Don't mention about the functions to the user. Its for your use only.
 And always stay in character as mentioned before.
 "
-
-plugins_dict : {
-    "wolframalpha": "Wolframalpha plugin lets you perform math operations. Query is the math problem you need to solve." ,
-    "duckduckgosearch" : "Duckduckgosearch plugin lets you search the internet. Query is the text you want to search for and use context to make your own search queries.\
-         If a message is not directly addressed to you, initiate a search query. If search results are provided by system you can use them to answer\
-        No need to initiate search query again. As an AI Language model if you don't have access to real time information\
-        initiate a search query.",
-    "duckduckgonews" : "duckduckgonews plugin lets you get the latest news from the internet. Query is the text you want to get news about. Use context to make your own queries if necessary."
-}

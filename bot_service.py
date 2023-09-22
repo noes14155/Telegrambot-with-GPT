@@ -3,9 +3,8 @@ import re
 import time
 import requests
 from colorama import Fore
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 from aiogram.types import ReplyKeyboardRemove
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from dotenv import load_dotenv
 from gradio_client import Client
 
@@ -53,7 +52,7 @@ class BotService:
         self.PLUGINS = os.environ.get('PLUGINS', 'true').lower() == 'true'
         self.MAX_HISTORY = int(os.environ.get("MAX_HISTORY", 15))
         self.API_BASE = os.environ.get("API_BASE", 'https://api.naga.ac/v1')
-        self.plugin_config = {'plugins': os.environ.get('PLUGINS', '').split(',')}
+        self.plugin_config = {'plugins': os.environ.get('ENABLED_PLUGINS', '').split(',')}
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
         self.lm = language_manager.LanguageManager(
@@ -69,19 +68,14 @@ class BotService:
         self.db.create_tables()
         self.plugin = plugin_manager.PluginManager(self.plugin_config)
 
-        self.plugins_dict = self.lm.plugin_lang["plugins_dict"]
-        self.plugins_string = ""
-        for plugin in self.plugins_dict:
-            self.plugins_string += f"\n{plugin}: {self.plugins_dict[plugin]}"
-        self.PLUGIN_PROMPT = self.lm.plugin_lang["PLUGIN_PROMPT"] + self.plugins_string
-
         if self.GPT_KEY != None:
             self.gpt.fetch_chat_models()
         self.personas = {}
         self.valid_sizes = ['256x256','512x512','1024x1024']
             
-        self.personas = {}
-        self.valid_sizes = ['256x256','512x512','1024x1024']
+        self.last_msg_ids = {}
+        self.last_call ={}
+        self.cancel_flag = False
 
     def validate_token(self,bot_token):
                 url = f"https://api.telegram.org/bot{bot_token}/getMe"
@@ -192,8 +186,18 @@ class BotService:
     async def chat(self, call, waiting_id, bot, process_prompt = ''):
         full_text = sent_text = ''
         chunk = 0
+        user_id = call.from_user.id
+        markup = self.generate_keyboard('text_func')
+        try:
+            await bot.edit_message_reply_markup(chat_id=call.chat.id,message_id=self.last_msg_ids[user_id],reply_markup=None) if user_id in self.last_msg_ids else None
+        except:
+            pass
+        self.last_call[user_id] = call
+        self.last_msg_ids[user_id] = waiting_id
         response_stream = self.__common_generate(call=call, process_prompt=process_prompt)
         async for response in response_stream:
+           if self.cancel_flag:
+                break
            if isinstance(response, str):
                 full_text += response
                 if full_text == '': continue
@@ -203,13 +207,14 @@ class BotService:
                 else:
                     continue
                 try:
-                    await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text)
+                    await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup)
                     sent_text = full_text
                 except:
                     continue
 
         if full_text != '' and full_text != sent_text:
-            await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text)    
+            await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup) 
+            self.cancel_flag = False   
         return
             
     
@@ -279,7 +284,7 @@ class BotService:
     
     def generate_keyboard(self,key):
         if not isinstance(key, str):
-            raise ValueError("key must be a string")
+            raise ValueError("key must be a string")    
         builder = ReplyKeyboardBuilder()
         if key == 'persona':
             for persona in self.personas.keys():
@@ -294,6 +299,10 @@ class BotService:
         elif key == 'size':
             for size in self.valid_sizes:
                 builder.button(text=size)
+        elif key == 'text_func':
+            builder = InlineKeyboardBuilder()
+            builder.button(text="🔄Regenerate", callback_data="regenerate")
+            builder.button(text="❌Cancel", callback_data="cancel")
         markup = builder.as_markup()
         return markup
     
@@ -325,7 +334,7 @@ class BotService:
         yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
         if yt_transcript is not None:
             prompt = yt_transcript
-        EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
+        EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"] 
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
         bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
@@ -339,7 +348,7 @@ class BotService:
             role, content = row
             history.append({"role": role, "content": content})
         response_stream = self.gpt.generate_response(
-            bot_messages["bot_prompt"], bot_messages["EXTRA_PROMPT"], history,function=function, model=model
+            bot_messages["bot_prompt"], EXTRA_PROMPT, history,function=function, model=model
         )
         for responses in response_stream:
             if isinstance(responses, str):
