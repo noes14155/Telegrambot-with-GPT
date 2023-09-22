@@ -9,6 +9,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.enums.chat_type import ChatType
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.filters import Command
+from aiogram.filters.callback_data import CallbackData
 from aiogram.types import FSInputFile, URLInputFile
 from functools import wraps
 from urllib.parse import urlparse
@@ -34,6 +35,10 @@ class MyStates(StatesGroup):
     SELECT_PERSONA = State()
     SELECT_MODEL = State()
     SELECT_SIZE = State()
+
+#class MyCallback(CallbackData, prefix="action"):
+#    : str
+#    bar: int
 
 def owner_only(func):
     @wraps(func)
@@ -182,7 +187,19 @@ async def toggle_dm(message: types.Message):
     logging.info(
             f"Direct Messages {'enabled' if dm_enabled else 'disabled'} by (id: {message.from_user.id})")
         
-        
+@dp.callback_query(F.data == "regenerate")
+async def regenerate(callback: types.CallbackQuery):
+    if callback.from_user.id not in service.last_call or callback.from_user.id not in service.last_msg_ids:
+        return
+    #delete previous message
+    await bot.delete_message(chat_id=callback.message.chat.id, message_id=service.last_msg_ids[callback.from_user.id])
+    # Regenerate response
+    waiting_id = await create_waiting_message(chat_id=callback.message.chat.id)  
+    await service.chat(call=service.last_call[callback.from_user.id], waiting_id=waiting_id, bot=bot)
+
+@dp.callback_query(F.data == "cancel")
+async def regenerate(callback: types.CallbackQuery):
+    service.cancel_flag = True
 
 @dp.message(F.content_type.in_({'text'}))
 async def chat_handler(call: types.Message):
