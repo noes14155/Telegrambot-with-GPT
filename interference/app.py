@@ -41,27 +41,30 @@ CORS(app)
 
 @app.route('/models')
 def get_models():
-   models = [
-     {
-       "id": "gpt-4",
-       "endpoints": [
-         "/chat/completions"
-       ]
-     },
-     {
-       "id": "gpt-3.5-turbo", 
-       "endpoints": [
-         "/chat/completions" 
-       ]
-     }
-   ]
+    """
+    Returns a JSON response containing a list of models and their endpoints.
+    """
+    models = [
+        {
+            "id": "gpt-4",
+            "endpoints": [
+                "/chat/completions"
+            ]
+        },
+        {
+            "id": "gpt-3.5-turbo",
+            "endpoints": [
+                "/chat/completions"
+            ]
+        }
+    ]
 
-   response = {
-     "data": models,
-     "object": "list"
-   }
+    response = {
+        "data": models,
+        "object": "list"
+    }
 
-   return jsonify(response)
+    return jsonify(response)
 
 @app.route("/chat/completions", methods=["POST"])
 def chat_completions():

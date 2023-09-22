@@ -1,23 +1,42 @@
 import asyncio
 import aiohttp
-from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 import gradio as gr
 from gradio_client import Client
 import threading
 import  openai
-import io
 
 class ImageGenerator:
-    def __init__(self, HG_IMG2TEXT):
-        self.HG_IMG2TEXT = HG_IMG2TEXT
-        def load_gradio():
-            gr.load("models/stabilityai/stable-diffusion-2-1").launch(server_port=7860)
+    """
+    The `ImageGenerator` class is responsible for generating image captions and images using various AI models.
+    It uses the `gradio` library to launch a server for image caption generation and the `openai` library to generate images.
+    """
 
-        gradio_thread = threading.Thread(target=load_gradio)
+    def __init__(self, HG_IMG2TEXT: str):
+        """
+        Initializes the `ImageGenerator` class and launches the `gradio` server in a separate thread.
+
+        Args:
+            HG_IMG2TEXT (str): The API endpoint for image-to-text conversion.
+        """
+        self.HG_IMG2TEXT = HG_IMG2TEXT
+        gradio_thread = threading.Thread(target=self.load_gradio)
         gradio_thread.start()
-        
-    
-    async def generate_imagecaption(self, url, HG_TOKEN):
+
+    def load_gradio(self):
+        gr.load("models/stabilityai/stable-diffusion-2-1").launch(server_port=7860)
+
+    async def generate_imagecaption(self, url: str, HG_TOKEN: str) -> str:
+        """
+        Generates a caption for the given image URL by sending a request to the `HG_IMG2TEXT` API endpoint.
+        Retries the request if there is a server error or the response is still loading.
+
+        Args:
+            url (str): The URL of the image.
+            HG_TOKEN (str): The token for authorization.
+
+        Returns:
+            str: The generated caption for the image.
+        """
         headers = {"Authorization": f"Bearer {HG_TOKEN}"}
         retries = 0
         async with aiohttp.ClientSession() as session:
@@ -44,12 +63,31 @@ class ImageGenerator:
                     else:
                         return f"Error: {await resp2.text()}"
 
-    async def generate_image(prompt):
+    async def generate_image(self, prompt: str) -> str:
+        """
+        Generates an image using the `openai` library by providing a prompt.
+
+        Args:
+            prompt (str): The prompt for generating the image.
+
+        Returns:
+            str: The generated image as text.
+        """
         client = Client("http://127.0.0.1:7860/")
-        text = client.predict(prompt, api_name="/predict" )
+        text = client.predict(prompt, api_name="/predict")
         return text
-    
-    async def dalle_generate(self, prompt, size):
+
+    async def dalle_generate(self, prompt: str, size: int) -> str:
+        """
+        Generates an image using the `openai` library by providing a prompt and size.
+
+        Args:
+            prompt (str): The prompt for generating the image.
+            size (int): The size of the image.
+
+        Returns:
+            str: The URL of the generated image.
+        """
         try:
             response = openai.Image.create(
                 prompt=prompt,

@@ -7,6 +7,8 @@ services:
       context: .
       dockerfile: Dockerfile
     restart: always
+#    volumes:
+#      - ./home/personas:/app/personas
 #  g4f_server:
 #    container_name: g4f_server
 #    ports:

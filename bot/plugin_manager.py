@@ -19,7 +19,12 @@ class PluginManager:
     A class to manage the plugins and call the correct functions
     """
 
-    def __init__(self,plugins):
+    def __init__(self, plugins):
+        """
+        Initializes the PluginManager with a list of enabled plugins
+
+        :param plugins: A dictionary containing the list of enabled plugins
+        """
         enabled_plugins = plugins.get('plugins', [])
         plugin_mapping = {
             'wolfram': WolframAlphaPlugin,
@@ -39,13 +44,19 @@ class PluginManager:
 
     def get_functions_specs(self):
         """
-        Return the list of function specs that can be called by the model
+        Returns the list of function specs that can be called by the model
+
+        :return: A list of function specs
         """
-        return [spec for specs in map(lambda plugin: plugin.get_spec(), self.plugins) for spec in specs]
+        return [spec for plugin in self.plugins for spec in plugin.get_spec()]
 
     async def call_function(self, function_name, arguments):
         """
-        Call a function based on the name and parameters provided
+        Calls a function based on the name and parameters provided
+
+        :param function_name: The name of the function to call
+        :param arguments: The arguments to pass to the function
+        :return: The result of the function call
         """
         plugin = self.__get_plugin_by_function_name(function_name)
         if not plugin:
@@ -54,7 +65,10 @@ class PluginManager:
 
     def get_plugin_source_name(self, function_name) -> str:
         """
-        Return the source name of the plugin
+        Returns the source name of the plugin
+
+        :param function_name: The name of the function
+        :return: The source name of the plugin
         """
         plugin = self.__get_plugin_by_function_name(function_name)
         if not plugin:
@@ -62,5 +76,10 @@ class PluginManager:
         return plugin.get_source_name()
 
     def __get_plugin_by_function_name(self, function_name):
-        return next((plugin for plugin in self.plugins
-                     if function_name in map(lambda spec: spec.get('name'), plugin.get_spec())), None)
+        """
+        Returns the plugin that contains the specified function name
+
+        :param function_name: The name of the function
+        :return: The plugin that contains the function, or None if not found
+        """
+        return next((plugin for plugin in self.plugins if function_name in map(lambda spec: spec.get('name'), plugin.get_spec())), None)

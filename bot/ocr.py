@@ -4,10 +4,31 @@ import requests
 from PIL import Image, ImageEnhance
 
 class OCR:
+    """
+    The OCR class is used for performing optical character recognition (OCR) on an image.
+    It uses the Tesseract OCR engine to extract text from the image.
+    """
+
     def __init__(self, config=None):
+        """
+        Initializes an instance of the OCR class with an optional configuration parameter.
+
+        Args:
+            config (str): Optional configuration parameter for Tesseract OCR.
+        """
         self.config = config
 
     def process_image(self, url):
+        """
+        Processes an image from a given URL and returns the extracted text if it contains non-whitespace characters,
+        otherwise returns None.
+
+        Args:
+            url (str): The URL of the image to be processed.
+
+        Returns:
+            str or None: The extracted text from the image, or None if no text is found.
+        """
         try:
             # Load the image
             response = requests.get(url)
