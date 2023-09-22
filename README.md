@@ -11,10 +11,9 @@
   
 - Supports OCR with Tesseract in addition to [salesforce blip image captioning.](https://huggingface.co/Salesforce/blip-image-captioning-large)
 - Easy to translate to your own language with multi-language support.
-- Internet access using  [duckduckgo_search.](https://github.com/deedy5/duckduckgo_search)
 - Supports voice transcription with [speech_recognition](https://github.com/Uberi/speech_recognition)
 - Image generation using Stability Diffusion and DALL-E.     
-- Plugin support for DuckDuckGo search and news (under testing).    
+- Plugin support by [n3d1117](https://github.com/n3d1117) under GNU GENERAL PUBLIC LICENSE.    
         
        
 
