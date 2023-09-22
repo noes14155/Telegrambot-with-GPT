@@ -192,6 +192,7 @@ async def regenerate(callback: types.CallbackQuery):
     if callback.from_user.id not in service.last_call or callback.from_user.id not in service.last_msg_ids:
         return
     #delete previous message
+    service.db.delete_last_2_user_history(callback.from_user.id)
     await bot.delete_message(chat_id=callback.message.chat.id, message_id=service.last_msg_ids[callback.from_user.id])
     # Regenerate response
     waiting_id = await create_waiting_message(chat_id=callback.message.chat.id)  

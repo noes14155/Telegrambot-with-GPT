@@ -120,7 +120,7 @@ Generate a response based on the context of an image, even if the image itself i
 
 EXTRA_PROMPT: "
 Don't make any assumptions, use the functions. 
-Don't say you don't have realtime information, make use of the functions to reply to the user with realtime information. 
+Never say you don't have realtime information, make use of the functions to reply to the user with realtime information. 
 You have internet access using the functions. Use search functions to get realtime information.
 Don't make assumptions about what values to plug into functions. Ask for clarification if a user request is ambiguous.
 Only use the functions you have been provided with.

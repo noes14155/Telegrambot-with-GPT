@@ -207,6 +207,7 @@ class BotService:
         async for response in response_stream:
            if self.cancel_flag:
                 break
+
            if isinstance(response, str):
                 full_text += response
                 if full_text == '': continue
@@ -303,7 +304,7 @@ class BotService:
                 builder.button(text=f"{self.lm.available_lang['languages'][lang_code]}({lang_code})")
         elif key == 'model':
             for model in self.gpt.models:
-                if model.startswith('gpt'):
+                #if model.startswith('gpt'):
                     builder.button(text=model)
         elif key == 'size':
             for size in self.valid_sizes:

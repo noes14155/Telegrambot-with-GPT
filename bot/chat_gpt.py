@@ -53,8 +53,9 @@ class ChatGPT:
                 function = []
                 print('Unsupported model. Plugins not used')
             messages = [
-                {"role": "system", "content": plugin_result},
+                
                 {"role": "system", "content": instruction},
+                {"role": "system", "content": plugin_result},
                 *history
             ]
             try:
@@ -62,6 +63,7 @@ class ChatGPT:
                     model=model,
                     messages=messages,
                     functions=function,
+                    function_call='auto',
                     stream=True
                 )
                 return response_stream
@@ -70,7 +72,7 @@ class ChatGPT:
                 if "rate limit" in text.lower():
                     retries += 1
                     if retries >= 3:
-                        break
+                        return text
                     else:
                         print(f"Rate limit on {model}. Retrying after 5 seconds")
                         time.sleep(5)

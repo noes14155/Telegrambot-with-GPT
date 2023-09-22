@@ -60,3 +60,17 @@ class Database:
         query = """DELETE FROM history WHERE user_id=?"""
         self.conn.execute(query, (user_id,))
         self.conn.commit()
+
+    def delete_last_2_user_history(self, user_id):
+        query = """
+    DELETE FROM history
+        WHERE rowid IN (
+            SELECT rowid
+            FROM history
+            WHERE user_id = ?
+            ORDER BY rowid DESC
+            LIMIT 2
+        )
+    """
+        self.conn.execute(query, (user_id,))
+        self.conn.commit()
