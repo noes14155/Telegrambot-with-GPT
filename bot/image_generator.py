@@ -11,7 +11,7 @@ class ImageGenerator:
     It uses the `gradio` library to launch a server for image caption generation and the `openai` library to generate images.
     """
 
-    def __init__(self, HG_IMG2TEXT: str):
+    def __init__(self, HG_IMG2TEXT: str, HG_TEXT2IMAGE: str):
         """
         Initializes the `ImageGenerator` class and launches the `gradio` server in a separate thread.
 
@@ -19,11 +19,12 @@ class ImageGenerator:
             HG_IMG2TEXT (str): The API endpoint for image-to-text conversion.
         """
         self.HG_IMG2TEXT = HG_IMG2TEXT
+        self.HG_TEXT2IMAGE = HG_TEXT2IMAGE
         gradio_thread = threading.Thread(target=self.load_gradio)
         gradio_thread.start()
 
     def load_gradio(self):
-        gr.load("models/stabilityai/stable-diffusion-2-1").launch(server_port=7860)
+        gr.load(f"models/{self.HG_TEXT2IMAGE}").launch(server_port=7860)
 
     async def generate_imagecaption(self, url: str, HG_TOKEN: str) -> str:
         """

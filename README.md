@@ -136,10 +136,13 @@ Get this by messaging @botfather Refer to [📖 Telegram Bot Tutorial](https://c
 - `HG_TOKEN`
 Optional(Required for image captioning). Sign up on hugging face and get the token from  [🔗 Hugging Face](https://huggingface.co/settings/tokens).      
 
-- `HG_img2text`
-Required for image captioning. If you wnat to use another model for image captioning. change it here.   
-Default value HG_img2text = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'     
+- `HG_IMG2TEXT`
+If you want to use another model for image captioning. change it here.   
+Default value HG_IMG2TEXT = 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large'     
 
+- `HG_TEXT2IMAGE`
+If you want to use another model for image generation with /img command, change it here
+Default value HG_TEXT2IMAGE = 'stabilityai/stable-diffusion-2-1'
 - `DEFAULT_LANG`
 Change to your language default english. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
 

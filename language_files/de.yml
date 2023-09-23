@@ -84,8 +84,7 @@ Die Sprache, die Sie als Muttersprachler erklären sollten, ist:
 "
 
 translator_prompt: "
-Sie müssen dem Benutzer in Englisch als Muttersprache antworten. Auch wenn der Benutzer eine Anfrage in einer anderen Sprache stellt, antworten Sie nur auf Englisch. Vollständig übersetzt.
-"
+Sie müssen dem Benutzer als Muttersprachler in der folgenden Sprache antworten. Auch wenn der Benutzer eine Anfrage in einer anderen Sprache stellt, antwortet er nur in dieser Sprache. Vollständig übersetzt. Und die Sprache ist:"
 
 voice_prompt: "
 System: Es folgt eine Transkription des Benutzerbefehls, die von einem Voice-to-Text-Modell generiert wurde.

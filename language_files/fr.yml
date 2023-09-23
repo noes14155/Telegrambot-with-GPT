@@ -84,7 +84,7 @@ La langue à expliquer en tant que natif est la suivante :
 "
 
 translator_prompt : "
-Vous devrez répondre à l'utilisateur en anglais en tant que natif. Même si l'utilisateur pose des questions dans une autre langue, répondez uniquement en anglais. Entièrement traduit.
+Vous devrez répondre à l'utilisateur dans la langue suivante en tant que natif. Même si l'utilisateur interroge dans une autre langue, il répond uniquement dans cette langue. Entièrement traduit. Et la langue est :
 "
 
 voice_prompt : "
