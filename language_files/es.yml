@@ -84,7 +84,7 @@ El idioma a explicar como nativo es:
 "
 
 translator_prompt: "
-Deberás responder al usuario en inglés como nativo. Incluso si el usuario realiza la consulta en otro idioma responda sólo en inglés. Traducido completamente.
+Deberá responder al usuario en el siguiente idioma como nativo. Incluso si el usuario consulta en otro idioma responda sólo en este idioma. Completamente traducido. Y el idioma es:
 "
 
 voice_prompt: "

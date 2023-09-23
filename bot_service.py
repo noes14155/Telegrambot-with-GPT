@@ -48,6 +48,7 @@ class BotService:
             print(Fore.WHITE,'Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
         self.HG_TOKEN = os.getenv("HG_TOKEN", '')
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
+        self.HG_TEXT2IMAGE = os.environ.get("HG_TEXT2IMAGE", "stabilityai/stable-diffusion-2-1")
         self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")       
         self.PLUGINS = os.environ.get('PLUGINS', 'true').lower() == 'true'
         self.MAX_HISTORY = int(os.environ.get("MAX_HISTORY", 15))
@@ -62,7 +63,7 @@ class BotService:
         self.vt = voice_transcript.VoiceTranscript()
         self.yt = yt_transcript.YoutubeTranscript()
         self.ft = file_transcript.FileTranscript()
-        self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT)
+        self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT, HG_TEXT2IMAGE=self.HG_TEXT2IMAGE)
         self.gpt = chat_gpt.ChatGPT(self.GPT_KEY,self.API_BASE)
         self.ocr = ocr.OCR(config=" --psm 3 --oem 3")
         self.db.create_tables()
@@ -347,8 +348,8 @@ class BotService:
         EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"] 
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
-        bot_messages["bot_prompt"] += bot_messages["translator_prompt"]
-        bot_messages["bot_prompt"] += f"/n Always stay in character as {persona}"
+        bot_messages["bot_prompt"] += f'{bot_messages["translator_prompt"]} {lm}'
+        bot_messages["bot_prompt"] += f'/n Always stay in character as {persona}'
         function = self.plugin.get_functions_specs() if self.PLUGINS else []
         should_exit = False
         fn_name = arguments = text =  ''

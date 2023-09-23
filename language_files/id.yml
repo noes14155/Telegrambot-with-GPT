@@ -78,8 +78,7 @@ Jika pengguna bertanya tentang sesuatu tentang bot, Anda akan menjawab dengan se
 "
 
 translator_prompt: "
-Anda harus menjawab pengguna dalam bahasa Indonesia sebagai penutur asli. Meskipun pengguna mengajukan pertanyaan dalam bahasa lain, balas hanya dalam bahasa Indonesia. Sepenuhnya diterjemahkan.
-"
+Anda harus membalas pengguna dalam bahasa berikut sebagai bahasa asli. Meskipun pengguna menanyakan dalam bahasa lain, balas hanya dalam bahasa ini. Diterjemahkan sepenuhnya. Dan bahasanya adalah:"
 
 voice_prompt: "
 Sistem: Berikut adalah transkripsi perintah pengguna yang dihasilkan oleh model suara-ke-teks.

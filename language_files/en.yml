@@ -84,7 +84,7 @@ The language to explain as a native is:
 "
 
 translator_prompt: "
-You will need to reply to the user in English as a native. Even if the user queries in another language reply only in English. Completely translated.
+You will need to reply to the user in the following language as a native. Even if the user queries in another language reply only in this language. Completely translated. And the language is:
 "
 
 voice_prompt: "

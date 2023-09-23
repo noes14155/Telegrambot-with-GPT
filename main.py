@@ -2,6 +2,8 @@ import asyncio
 import logging
 import os
 import random
+
+import requests
 from updater import SelfUpdating
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -141,15 +143,15 @@ async def img_handler(call: types.Message, state: FSMContext):
 
 @dp.message(MyStates.SELECT_PROMPT)
 async def select_prompt_handler(call: types.Message, state: FSMContext):
+    waiting_id = await create_waiting_message(chat_id=call.chat.id)
     filename, markup = await service.select_prompt(
         user_id=call.from_user.id, user_message=call.text, state=state
     )
+    await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
     if markup == None:
-        waiting_id = await create_waiting_message(chat_id=call.chat.id)
         await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
         photo = FSInputFile(filename)
         await bot.send_photo(chat_id=call.chat.id, photo=photo)
-        await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
         os.remove(filename)
         await state.clear()
     else:
@@ -239,7 +241,7 @@ async def set_commands(user_id):
             command="/hello", description=f"🌟 {bot_messages['hello_description']}"
         ),
         types.BotCommand(
-            command="/img", description="🎨 Generate image using Stable Diffusion"
+            command="/img", description="🎨 Generate image custom model"
         ),
         types.BotCommand(
             command="/dalle",description="🎨 Generate image using DALLE-E"
@@ -264,7 +266,10 @@ async def set_commands(user_id):
         commands.append(types.BotCommand(
             command="/toggledm", description=f"Toggle Direct Message"
         ))
-    
+    response = requests.head(f"{service.API_BASE}/images/generations")
+    if response.status_code == 404:
+        commands = [command for command in commands if command.command != "/dalle"]
+
     await bot.delete_my_commands()
     await bot.set_my_commands(commands)
 

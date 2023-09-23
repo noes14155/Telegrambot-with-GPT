@@ -84,8 +84,7 @@ Ang wikang ipaliwanag bilang isang katutubo ay:
 "
 
 translator_prompt: "
-Kakailanganin mong tumugon sa gumagamit sa Ingles bilang isang katutubong. Kahit na magtanong ang user sa ibang wika ay tumugon lamang sa English. Ganap na isinalin.
-"
+Kakailanganin mong tumugon sa gumagamit sa sumusunod na wika bilang isang katutubong. Kahit na magtanong ang user sa ibang wika ay tumugon lamang sa wikang ito. Ganap na isinalin. At ang wika ay:"
 
 voice_prompt: "
 System: Ang sumusunod ay isang transkripsyon ng command ng user na nabuo ng isang voice-to-text na modelo.
