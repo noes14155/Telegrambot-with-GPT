@@ -10,6 +10,7 @@ from .Aivvm         import Aivvm
 from .Bard          import Bard
 from .Bing          import Bing
 from .ChatBase      import ChatBase
+from .ChatForAi     import ChatForAi
 from .ChatgptAi     import ChatgptAi
 from .ChatgptDuo    import ChatgptDuo
 from .ChatgptLogin  import ChatgptLogin
@@ -18,6 +19,7 @@ from .DeepAi        import DeepAi
 from .DfeHub        import DfeHub
 from .EasyChat      import EasyChat
 from .Forefront     import Forefront
+from .FreeGpt       import FreeGpt
 from .GetGpt        import GetGpt
 from .GptGo         import GptGo
 from .H2o           import H2o
@@ -29,6 +31,7 @@ from .Opchatgpts    import Opchatgpts
 from .OpenaiChat    import OpenaiChat
 from .OpenAssistant import OpenAssistant
 from .PerplexityAi  import PerplexityAi
+from .Phind         import Phind
 from .Raycast       import Raycast
 from .Theb          import Theb
 from .Vercel        import Vercel
@@ -61,6 +64,7 @@ __all__ = [
     'Bard',
     'Bing',
     'ChatBase',
+    'ChatForAi',
     'ChatgptAi',
     'ChatgptDuo',
     'ChatgptLogin',
@@ -69,6 +73,7 @@ __all__ = [
     'DfeHub',
     'EasyChat',
     'Forefront',
+    'FreeGpt',
     'GetGpt',
     'GptGo',
     'H2o',
@@ -81,6 +86,7 @@ __all__ = [
     'OpenaiChat',
     'OpenAssistant',
     'PerplexityAi',
+    'Phind',
     'Theb',
     'Vercel',
     'Vitalentum',
