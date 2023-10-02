@@ -30,12 +30,12 @@ from g4f.Provider import (
 )
 providers = [
     #AItianhu,
-    #Acytoo,
-    #Aichat,
-    Ails,
+    Acytoo,
+    Aichat,
+    #Ails,
     #Aivvm,
     #Bard,
-    #Bing,
+    Bing,
     ChatBase,
     ChatgptAi,
     #ChatgptLogin,
@@ -50,9 +50,9 @@ providers = [
     #Theb,
     #Vercel,
     Vitalentum,
-    Wewordle,
+    #Wewordle,
     #Ylokh,
-    #You,
+    You,
     Yqcloud
     ]
 for provider in providers:

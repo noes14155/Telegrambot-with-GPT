@@ -73,9 +73,9 @@ def chat_completions():
     messages = request.get_json().get("messages")
     providers = [
     #AItianhu,
-    #Acytoo,
-    #Aichat,
-    Ails,
+    Acytoo,
+    Aichat,
+    #Ails,
     #Aivvm,
     #Bard,
     #Bing,
@@ -93,9 +93,9 @@ def chat_completions():
     #Theb,
     #Vercel,
     Vitalentum,
-    Wewordle,
+    #Wewordle,
     #Ylokh,
-    #You,
+    You,
     Yqcloud
     ]
 
