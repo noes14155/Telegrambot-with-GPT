@@ -5,3 +5,4 @@ g4f
 transformers
 tensorflow
 torch
+asgiref

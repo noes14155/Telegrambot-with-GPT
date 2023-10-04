@@ -46,7 +46,8 @@ def get_models():
 
 @app.route('/chat/completions', methods=['POST'])
 def chat_completions():
-    model = request.get_json().get('model', 'gpt-3.5-turbo') if model not in ['gpt-4', 'gpt-3.5-turbo'] else model
+    model = request.get_json().get('model', 'gpt-3.5-turbo')
+    model = 'gpt-3.5-turbo' if model not in ['gpt-4', 'gpt-3.5-turbo'] else model
     stream   = request.get_json().get('stream', False)
     messages = request.get_json().get('messages')
     response = ChatCompletion.create(model=model, stream=stream, messages=messages)

@@ -28,4 +28,4 @@ COPY . .
 
 
 # Define the default command to run the app using Python's module mode.
-CMD ["python", "-m", "app"]
+CMD ["/bin/bash", "/app/startup.sh"]
