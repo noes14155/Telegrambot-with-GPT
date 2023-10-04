@@ -9,6 +9,8 @@ services:
     restart: always
 #    volumes:
 #      - ./home/personas:/app/personas
+#    depends_on:
+#      - g4f_server
 #  g4f_server:
 #    container_name: g4f_server
 #    ports:
