@@ -29,7 +29,10 @@ class ChatGPT:
         Returns:
             List[str]: The available chat models.
         """
-        response = requests.get(self.fetch_models_url, headers=self.headers)
+        try:
+            response = requests.get(self.fetch_models_url, headers=self.headers)
+        except:
+            return self.models.append('gpt-3.5-turbo')
         if response.status_code == 200:
             models_data = response.json()
             for model in models_data.get('data'):
