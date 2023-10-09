@@ -153,12 +153,12 @@ Enable or disable plugins. Default value True.
 Add your userid from telegram. If empty DM enable or disable option will be disabled.     
 
 - `GPT_KEY`
-To use GPT4free GPT_KEY = '' (Only working in docker)
+To use GPT4free GPT_KEY = ''        
 Key from the provider (including openai). Whichever api base you want use the key provided.
 For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/chimer_ai)     
 
 - `API_BASE`
-To use GPT4free API_BASE = 'http://g4f_server:1337' (Only working in docker)
+To use GPT4free API_BASE = 'http://localhost:1337'      
 You can use any provider. I have included Naga AI api base. Use the key for the same.
 
 - `MAX_HISTORY`

@@ -1,8 +1,0 @@
-flask_cors
-watchdog~=3.0.0
-uvicorn
-g4f
-transformers
-tensorflow
-torch
-asgiref

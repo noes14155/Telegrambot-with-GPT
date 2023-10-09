@@ -27,4 +27,7 @@ openai
 gtts
 pytube
 whois
-spotipy
+asgiref
+uvicorn
+flask_cors
+g4f

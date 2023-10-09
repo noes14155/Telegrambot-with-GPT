@@ -2,7 +2,7 @@ import asyncio
 import logging
 import os
 import random
-
+import sys
 import requests
 from updater import SelfUpdating
 from aiogram import Bot, Dispatcher, types, F
@@ -19,7 +19,9 @@ from urllib.parse import urlparse
 import bot_service
 
 from replit_detector import ReplitFlaskApp
-
+import subprocess
+command = [sys.executable, 'interference/app.py']
+process = subprocess.Popen(command, env=dict(os.environ))
 service = bot_service.BotService()
 updater = SelfUpdating('noes14155/Telegrambot-with-GPT4free')
 storage = MemoryStorage()
@@ -37,10 +39,6 @@ class MyStates(StatesGroup):
     SELECT_PERSONA = State()
     SELECT_MODEL = State()
     SELECT_SIZE = State()
-
-#class MyCallback(CallbackData, prefix="action"):
-#    : str
-#    bar: int
 
 def owner_only(func):
     @wraps(func)
