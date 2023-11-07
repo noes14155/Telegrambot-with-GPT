@@ -155,11 +155,15 @@ Add your userid from telegram. If empty DM enable or disable option will be disa
 - `GPT_KEY`
 To use GPT4free GPT_KEY = ''        
 Key from the provider (including openai). Whichever api base you want use the key provided.
-For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/chimer_ai)     
+Naga AI, Novo, Genius AI, Mandrill AI tested, Use correct API_base and GPT_KEY according to the provider
+For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/naga_ai)     
 
 - `API_BASE`
 To use GPT4free API_BASE = 'http://localhost:1337'      
 You can use any provider. I have included Naga AI api base. Use the key for the same.
+
+- `DEFAULT_MODEL`
+For some providers like Mandrill, which doesn't support models query, provide a default model. Used only if model query returns 404 from the provider.          
 
 - `MAX_HISTORY`
 Number of conversation history to be sent with each request. Default value 10. Don't put more than 20.      

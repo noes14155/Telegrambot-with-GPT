@@ -18,7 +18,6 @@ from urllib.parse import urlparse
 
 import bot_service
 
-from replit_detector import ReplitFlaskApp
 import subprocess
 command = [sys.executable, 'interference/app.py']
 process = subprocess.Popen(command, env=dict(os.environ))
@@ -52,7 +51,7 @@ def owner_only(func):
 async def create_waiting_message(chat_id):
     bot_messages = service.lm.local_messages(user_id=chat_id)
     waiting_message = random.choice(bot_messages["waiting_messages"])
-    sent = await bot.send_message(chat_id=chat_id, text="⏳ " + waiting_message)
+    sent = await bot.send_message(chat_id=chat_id, text=f"⏳  {waiting_message}")
     asyncio.create_task(bot.send_chat_action(chat_id, "typing"))
     return sent.message_id
 
@@ -146,7 +145,7 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
         user_id=call.from_user.id, user_message=call.text, state=state
     )
     await delete_waiting_message(chat_id=call.chat.id, waiting_id=waiting_id)
-    if markup == None:
+    if markup is None:
         if filename:
             await bot.send_chat_action(chat_id=call.chat.id, action="upload_photo")
             photo = FSInputFile(filename)
@@ -239,38 +238,44 @@ async def set_commands(user_id):
     bot_messages = service.lm.local_messages(user_id=user_id)
     commands = [
         types.BotCommand(
-            command="/hello", description=f"🌟 {bot_messages['hello_description']}"
+            command="/hello",
+            description=f"🌟 {bot_messages['hello_description']}",
         ),
         types.BotCommand(
             command="/img", description="🎨 Generate image custom model"
         ),
         types.BotCommand(
-            command="/dalle",description="🎨 Generate image using DALLE-E"
+            command="/dalle", description="🎨 Generate image using DALLE-E"
         ),
         types.BotCommand(
-            command="/lang", description=f"🌐 {bot_messages['lang_description']}"
+            command="/lang",
+            description=f"🌐 {bot_messages['lang_description']}",
         ),
         types.BotCommand(
-            command="/changepersona", description=f"👤 Change character of bot"
+            command="/changepersona", description="👤 Change character of bot"
         ),
         types.BotCommand(
-            command="/clear", description=f"🧹 {bot_messages['clear_description']}"
+            command="/clear",
+            description=f"🧹 {bot_messages['clear_description']}",
         ),
         types.BotCommand(
-            command="/help", description=f"ℹ️  {bot_messages['help_description']}"
+            command="/help",
+            description=f"ℹ️  {bot_messages['help_description']}",
         ),
         types.BotCommand(
-            command="/changemodel", description=f"Change gpt model"
-        )     
+            command="/changemodel", description="Change gpt model"
+        ),
     ]
     if service.BOT_OWNER_ID != '':
-        commands.append(types.BotCommand(
-            command="/toggledm", description=f"Toggle Direct Message"
-        ))
+        commands.append(
+            types.BotCommand(
+                command="/toggledm", description="Toggle Direct Message"
+            )
+        )
     response = requests.head(f"{service.API_BASE}/images/generations")
     if response.status_code == 404:
         commands = [command for command in commands if command.command != "/dalle"]
-
+        
     await bot.delete_my_commands()
     await bot.set_my_commands(commands)
 
@@ -279,10 +284,7 @@ async def main():
 
 if __name__ == "__main__":
     updater.check_for_update()
-    replit_app = ReplitFlaskApp()
-    replit = replit_app.run()
-    if not replit:
-        asyncio.run(main())
+    asyncio.run(main())
 
 
 service.db.close_connection()

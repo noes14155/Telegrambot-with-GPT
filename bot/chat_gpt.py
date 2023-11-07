@@ -4,7 +4,7 @@ import openai
 from typing import List, Dict, Any, Generator
 
 class ChatGPT:
-    def __init__(self, api_key: str, api_base: str):
+    def __init__(self, api_key: str, api_base: str, default_model: str):
         """
         Initializes the ChatGPT instance with the provided API key and base URL.
 
@@ -16,6 +16,7 @@ class ChatGPT:
         openai.api_base = api_base
 
         self.fetch_models_url = f'{api_base}/models'
+        self.default_model = default_model
         self.models = []
         self.headers = {
             'Authorization': f'Bearer {api_key}',
@@ -31,8 +32,8 @@ class ChatGPT:
         """
         try:
             response = requests.get(self.fetch_models_url, headers=self.headers)
-        except:
-            return self.models.append('gpt-3.5-turbo')
+        except Exception:
+            return self.models.append(self.default_model)
         if response.status_code == 200:
             models_data = response.json()
             for model in models_data.get('data'):
@@ -40,13 +41,10 @@ class ChatGPT:
                     self.models.append(model['id'])
         else:
             print(f"Failed to fetch chat models. Status code: {response.status_code}")
-
+            self.models.append(self.default_model)
         return self.models
 
-    def generate_response(
-        self, instruction: str, plugin_result: str, history: List[Dict[str, str]],
-        function: List[Dict[str, Any]] = [], model: str = 'gpt-3.5-turbo'
-    ) -> Generator[str, None, None]:
+    def generate_response(self, instruction: str, plugin_result: str, history: List[Dict[str, str]], function: List[Dict[str, Any]] = None, model: str = 'gpt-3.5-turbo') -> Generator[str, None, None]:
         """
         Generates a response using the selected model and input parameters.
 
@@ -60,6 +58,8 @@ class ChatGPT:
         Yields:
             str: Each message in the response stream.
         """
+        if function is None:
+            function = []
         retries = 0
         while True:
             text = ''

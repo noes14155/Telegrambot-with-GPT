@@ -1,6 +1,5 @@
 import os
 import re
-import time
 import requests
 from colorama import Fore
 from aiogram.types import ReplyKeyboardRemove
@@ -53,6 +52,7 @@ class BotService:
         self.PLUGINS = os.environ.get('PLUGINS', 'true').lower() == 'true'
         self.MAX_HISTORY = int(os.environ.get("MAX_HISTORY", 15))
         self.API_BASE = os.environ.get("API_BASE", 'https://api.naga.ac/v1')
+        self.DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", 'gpt-3.5')
         self.plugin_config = {'plugins': os.environ.get('ENABLED_PLUGINS', '').split(',')}
         os.makedirs("downloaded_files", exist_ok=True)
         self.db = database.Database("chatbot.db")
@@ -64,7 +64,7 @@ class BotService:
         self.yt = yt_transcript.YoutubeTranscript()
         self.ft = file_transcript.FileTranscript()
         self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT, HG_TEXT2IMAGE=self.HG_TEXT2IMAGE)
-        self.gpt = chat_gpt.ChatGPT(self.GPT_KEY,self.API_BASE)
+        self.gpt = chat_gpt.ChatGPT(self.GPT_KEY,self.API_BASE,self.DEFAULT_MODEL)
         self.ocr = ocr.OCR(config=" --psm 3 --oem 3")
         self.db.create_tables()
         self.plugin = plugin_manager.PluginManager(self.plugin_config)
@@ -97,8 +97,7 @@ class BotService:
     async def clear(self, user_id):
         bot_messages = self.lm.local_messages(user_id=user_id)
         self.db.delete_user_history(user_id=user_id)
-        response = f"🧹 {bot_messages['history_cleared']}"
-        return response
+        return f"🧹 {bot_messages['history_cleared']}"
 
     async def help(self, call, waiting_id, bot):
         await self.chat(call, waiting_id, bot)
@@ -159,8 +158,8 @@ class BotService:
     
     async def img(self, user_id):
         bot_messages = self.lm.local_messages(user_id=user_id)
-        response = bot_messages["img_prompt"]
-        return response
+        return bot_messages["img_prompt"]
+        
 
     async def select_prompt(self, user_id, user_message, state):
         data = await state.get_data()
@@ -224,9 +223,9 @@ class BotService:
                 except:
                     continue
 
-        if full_text != '' and full_text != sent_text:
+        if full_text not in ['', sent_text]:
             await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup) 
-            self.cancel_flag = False   
+            self.cancel_flag = False
         return
             
     
