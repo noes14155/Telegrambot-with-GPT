@@ -23,7 +23,7 @@ pydub
 pycryptodome
 GitPython
 flask
-openai
+openai==0.28
 gtts
 pytube
 whois

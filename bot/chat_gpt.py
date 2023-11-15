@@ -15,7 +15,7 @@ class ChatGPT:
         openai.api_key = api_key
         openai.api_base = api_base
 
-        self.fetch_models_url = f'{api_base}/models'
+        self.fetch_models_url = 'http://localhost:1337/models'
         self.default_model = default_model
         self.models = []
         self.headers = {
@@ -73,22 +73,20 @@ class ChatGPT:
                 *history
             ]
             try:
-                response_stream = openai.ChatCompletion.create(
+                return openai.ChatCompletion.create(
                     model=model,
                     messages=messages,
                     functions=function,
                     function_call='auto',
-                    stream=True
+                    stream=True,
                 )
-                return response_stream
             except Exception as e:
                 text = f'model not available ```{e}```'
                 if "rate limit" in text.lower():
                     retries += 1
                     if retries >= 3:
                         return text
-                    else:
-                        print(f"Rate limit on {model}. Retrying after 5 seconds")
-                        time.sleep(5)
-                        continue
+                    print(f"Rate limit on {model}. Retrying after 5 seconds")
+                    time.sleep(5)
+                    continue
                 return text
