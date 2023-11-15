@@ -156,7 +156,7 @@ Add your userid from telegram. If empty DM enable or disable option will be disa
 To use GPT4free GPT_KEY = ''        
 Key from the provider (including openai). Whichever api base you want use the key provided.
 Naga AI, Novo, Genius AI, Mandrill AI tested, Use correct API_base and GPT_KEY according to the provider
-For Naga AI, Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu) , [Naga AI Telegram](https://t.me/naga_ai)     
+Get this by messaging run the /key get command in th bot channel in [Naga AI Discord](https://discord.gg/JxRBXBhabu), [MandrillaiAI](https://discord.com/invite/vVzbwAXt)     
 
 - `API_BASE`
 To use GPT4free API_BASE = 'http://localhost:1337'      

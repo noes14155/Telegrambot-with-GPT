@@ -75,8 +75,8 @@ class ImageGenerator:
             str: The generated image as text.
         """
         client = Client("http://127.0.0.1:7860/")
-        text = client.predict(prompt, api_name="/predict")
-        return text
+        return client.predict(prompt, api_name="/predict")
+        
 
     async def dalle_generate(self, prompt: str, size: int) -> str:
         """

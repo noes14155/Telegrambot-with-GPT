@@ -32,23 +32,23 @@ class BotService:
             else:
                 print(Fore.RED,'Invalid bot token')
                 exit
-        except:
+        except Exception:
             print(Fore.RED,'please add your telegram bot token in the env file')
             exit
         try:
             self.GPT_KEY = os.getenv("GPT_KEY")
-        except:
+        except Exception:
             print(Fore.RED,'Please add your gpt apikey in your env file')
             exit
         try:
             self.BOT_OWNER_ID = os.getenv("BOT_OWNER_ID")
-        except:
+        except Exception:
             self.BOT_OWNER_ID = ''
             print(Fore.WHITE,'Owner Id couldn\'t be determined. ToggleDM function will be disabled. To enable it add bot owner id to your environment variable')
         self.HG_TOKEN = os.getenv("HG_TOKEN", '')
         self.HG_IMG2TEXT = os.environ.get("HG_IMG2TEXT", 'https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large')
         self.HG_TEXT2IMAGE = os.environ.get("HG_TEXT2IMAGE", "stabilityai/stable-diffusion-2-1")
-        self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")       
+        self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")
         self.PLUGINS = os.environ.get('PLUGINS', 'true').lower() == 'true'
         self.MAX_HISTORY = int(os.environ.get("MAX_HISTORY", 15))
         self.API_BASE = os.environ.get("API_BASE", 'https://api.naga.ac/v1')
@@ -73,7 +73,7 @@ class BotService:
             self.gpt.fetch_chat_models()
         self.personas = {}
         self.valid_sizes = ['256x256','512x512','1024x1024']
-            
+
         self.last_msg_ids = {}
         self.last_call ={}
         self.cancel_flag = False
@@ -185,13 +185,14 @@ class BotService:
 
     
     async def chat(self, call, waiting_id, bot, process_prompt = ''):
+        # sourcery skip: use-contextlib-suppress
         full_text = sent_text = ''
         chunk = 0
         user_id = call.from_user.id
         markup = self.generate_keyboard('text_func')
         try:
             await bot.edit_message_reply_markup(chat_id=call.chat.id,message_id=self.last_msg_ids[user_id],reply_markup=None) if user_id in self.last_msg_ids else None
-        except:
+        except Exception:
             pass
         self.last_call[user_id] = call
         self.last_msg_ids[user_id] = waiting_id
@@ -200,16 +201,16 @@ class BotService:
         self.cancel_flag = False
         try:
             await bot.edit_message_reply_markup(chat_id=call.chat.id,message_id=self.last_msg_ids[user_id],reply_markup=None) if user_id in self.last_msg_ids else None
-        except:
+        except Exception:
             pass
         self.last_call[user_id] = call
         self.last_msg_ids[user_id] = waiting_id
         response_stream = self.__common_generate(call=call, process_prompt=process_prompt)
         async for response in response_stream:
-           if self.cancel_flag:
-                break
+            if self.cancel_flag:
+                 break
 
-           if isinstance(response, str):
+            if isinstance(response, str):
                 full_text += response
                 if full_text == '': continue
                 chunk += 1
@@ -220,7 +221,7 @@ class BotService:
                 try:
                     await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup)
                     sent_text = full_text
-                except:
+                except Exception:
                     continue
 
         if full_text not in ['', sent_text]:
@@ -290,12 +291,12 @@ class BotService:
 
     def escape_markdown(self,text):
         escape_chars = ['_', '-', '!', '*', '[', ']', '(', ')', '~', '>', '#', '+', '=', '{','}','|','.']
-        regex = r"([%s])" % "|".join(map(re.escape, escape_chars))
+        regex = f'([{"|".join(map(re.escape, escape_chars))}])'
         return re.sub(regex, r"\\\1", text)
     
     def generate_keyboard(self,key):
         if not isinstance(key, str):
-            raise ValueError("key must be a string")    
+            raise ValueError("key must be a string")
         builder = ReplyKeyboardBuilder()
         if key == 'persona':
             for persona in self.personas.keys():
@@ -314,8 +315,7 @@ class BotService:
             builder = InlineKeyboardBuilder()
             builder.button(text="🔄Regenerate", callback_data="regenerate")
             builder.button(text="❌Cancel", callback_data="cancel")
-        markup = builder.as_markup()
-        return markup
+        return builder.as_markup()
     
     async def __common_generate(self, call, process_prompt = ''):
         user_id = call.from_user.id
@@ -329,23 +329,21 @@ class BotService:
         )
         lm = self.lm.available_lang["languages"][lang]
         history = []
-        if user_message == "/start":
-            prompt = bot_messages["help"] + f"{lm}."
-        elif user_message == "/help":
+        if user_message in ["/start", "/help"]:
             prompt = bot_messages["help"] + f"{lm}."
         elif process_prompt != '':
             prompt = process_prompt
         else:
             prompt = user_message
-        
-        
+
+
         web_text = await self.ws.extract_text_from_website(prompt)
         if web_text is not None:
             prompt = web_text
         yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
         if yt_transcript is not None:
             prompt = yt_transcript
-        EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"] 
+        EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
         bot_messages["bot_prompt"] += f'{bot_messages["translator_prompt"]} {lm}'
@@ -386,12 +384,12 @@ class BotService:
         if should_exit:
             self.db.insert_history(user_id=user_id, role="assistant", content=text)
             return      
-                
+
         print("Using function ",fn_name, "with arguments ", arguments)
         result = await self.plugin.call_function(fn_name,arguments)
         should_exit = False
         history.append({"role": "function", "name":fn_name, "content": result})
-        for i in range(3):
+        for _ in range(3):
             response_stream = self.gpt.generate_response(
             bot_messages["bot_prompt"], result, history, function, model=model
             )

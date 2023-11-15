@@ -80,7 +80,7 @@ class SelfUpdating:
             str: The current version of the repository.
         """
         # Return current version somehow
-        return "0.6"
+        return "0.7"
 
     def get_latest_tag_from_github(self, repo_url: str) -> str:
         """
