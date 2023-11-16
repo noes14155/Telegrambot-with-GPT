@@ -144,6 +144,7 @@ class BotService:
         return response, markup
         
     async def changemodel(self): 
+        self.gpt.fetch_chat_models()
         response = "Select from the models or providers"
         markup = self.generate_keyboard('model')
         return response, markup
