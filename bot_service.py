@@ -2,7 +2,7 @@ import os
 import re
 import requests
 from colorama import Fore
-from aiogram.types import ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardRemove, FSInputFile
 from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 from dotenv import load_dotenv
 from gradio_client import Client
@@ -17,7 +17,8 @@ from bot import (
     voice_transcript,
     web_search,
     yt_transcript,
-    chat_gpt
+    chat_gpt,
+    tts
 )
 
 
@@ -65,6 +66,7 @@ class BotService:
         self.ft = file_transcript.FileTranscript()
         self.ig = image_generator.ImageGenerator(HG_IMG2TEXT=self.HG_IMG2TEXT, HG_TEXT2IMAGE=self.HG_TEXT2IMAGE)
         self.gpt = chat_gpt.ChatGPT(self.GPT_KEY,self.API_BASE,self.DEFAULT_MODEL)
+        self.tts = tts.TextToSpeech(self.GPT_KEY,self.API_BASE)
         self.ocr = ocr.OCR(config=" --psm 3 --oem 3")
         self.db.create_tables()
         self.plugin = plugin_manager.PluginManager(self.plugin_config)
@@ -227,9 +229,18 @@ class BotService:
         if full_text not in ['', sent_text]:
             await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup) 
             self.cancel_flag = False
+        
+        await self.generate_tts(full_text, call, bot)
         return
             
-    
+    async def generate_tts(self, full_text, call, bot):
+        audio_chunks = await self.tts.create_audio_segments(full_text)
+        audio_file_path = self.tts.join_audio_segments(audio_chunks)
+        audio_file = FSInputFile(audio_file_path)
+        await bot.send_voice(chat_id=call.chat.id, voice=audio_file)
+        os.remove(audio_file_path)
+        
+
     async def voice(self, call, waiting_id, bot):
         user_id = call.from_user.id
         lang, persona, model = self.db.get_settings(user_id)
@@ -340,9 +351,9 @@ class BotService:
         web_text = await self.ws.extract_text_from_website(prompt)
         if web_text is not None:
             prompt = web_text
-        yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
-        if yt_transcript is not None:
-            prompt = yt_transcript
+        #yt_transcript = await self.yt.get_yt_transcript(user_message, lang)
+        #if yt_transcript is not None:
+        #    prompt = yt_transcript
         EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"

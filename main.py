@@ -201,7 +201,7 @@ async def regenerate(callback: types.CallbackQuery):
     await service.chat(call=service.last_call[callback.from_user.id], waiting_id=waiting_id, bot=bot)
 
 @dp.callback_query(F.data == "cancel")
-async def regenerate(callback: types.CallbackQuery):
+async def cancel(callback: types.CallbackQuery):
     service.cancel_flag = True
 
 @dp.message(F.content_type.in_({'text'}))

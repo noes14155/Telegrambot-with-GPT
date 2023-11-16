@@ -3,6 +3,13 @@ import re
 from youtube_transcript_api import YouTubeTranscriptApi
 
 class YoutubeTranscript:
+    def get_transcript(self, video_id, lang_code):
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+        transcript = transcript_list.find_transcript([lang_code])
+        if transcript is None:
+            transcript = transcript_list.find_manually_created_transcript([lang_code])
+        return transcript
+
     async def get_yt_transcript(self, message_content: str, lang: str) -> str:
         """
         Retrieves and formats the transcript of a YouTube video based on a given video URL.
@@ -28,20 +35,21 @@ class YoutubeTranscript:
                 r"(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?([^&=%\?]{11})"
             )
             match = youtube_link_pattern.search(message_content)
-            return match.group(6) if match else None
+            return match[6] if match else None
 
         try:
             video_id = extract_video_id(message_content)
             if not video_id:
                 return None
 
-            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
-            first_transcript = next(iter(transcript_list), None)
-            if not first_transcript:
+            transcript = self.get_transcript(video_id, lang)
+
+            #first_transcript = next(iter(transcript_list), None)
+            if not transcript:
                 return None
 
             formatted_transcript = ". ".join(
-                [entry["text"] for entry in first_transcript.fetch()]
+                [entry["text"] for entry in transcript.fetch()]
             )[:2500]
 
             response = f"Please provide a summary or additional information for the following YouTube video transcript in a few concise bullet points.\n\n{formatted_transcript}"
