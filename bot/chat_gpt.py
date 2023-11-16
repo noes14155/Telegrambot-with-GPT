@@ -15,7 +15,7 @@ class ChatGPT:
         openai.api_key = api_key
         openai.api_base = api_base
 
-        self.fetch_models_url = 'http://localhost:1337/models'
+        self.fetch_models_url = f'{api_base}/models'
         self.default_model = default_model
         self.models = []
         self.headers = {
@@ -30,20 +30,27 @@ class ChatGPT:
         Returns:
             List[str]: The available chat models.
         """
+        
         try:
             response = requests.get(self.fetch_models_url, headers=self.headers)
         except Exception:
-            return self.models.append(self.default_model)
+            self.models.append('gpt-4')
+            self.models.append('gpt-3.5-turbo')
         if response.status_code == 200:
             models_data = response.json()
-            for model in models_data.get('data'):
-                if "chat" in model['endpoints'][0]:
-                    self.models.append(model['id'])
+            self.models.extend(
+                model['id']
+                for model in models_data.get('data')
+                if "chat" in model['endpoints'][0]
+            )
         else:
             print(f"Failed to fetch chat models. Status code: {response.status_code}")
+        if self.default_model not in self.models:
             self.models.append(self.default_model)
         return self.models
 
+
+    
     def generate_response(self, instruction: str, plugin_result: str, history: List[Dict[str, str]], function: List[Dict[str, Any]] = None, model: str = 'gpt-3.5-turbo') -> Generator[str, None, None]:
         """
         Generates a response using the selected model and input parameters.

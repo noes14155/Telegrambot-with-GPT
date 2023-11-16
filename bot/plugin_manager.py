@@ -58,10 +58,10 @@ class PluginManager:
         :param arguments: The arguments to pass to the function
         :return: The result of the function call
         """
-        plugin = self.__get_plugin_by_function_name(function_name)
-        if not plugin:
+        if plugin := self.__get_plugin_by_function_name(function_name):
+            return json.dumps(await plugin.execute(function_name, **json.loads(arguments)), default=str)
+        else:
             return json.dumps({'error': f'Function {function_name} not found'})
-        return json.dumps(await plugin.execute(function_name, **json.loads(arguments)), default=str)
 
     def get_plugin_source_name(self, function_name) -> str:
         """
@@ -71,9 +71,7 @@ class PluginManager:
         :return: The source name of the plugin
         """
         plugin = self.__get_plugin_by_function_name(function_name)
-        if not plugin:
-            return ''
-        return plugin.get_source_name()
+        return '' if not plugin else plugin.get_source_name()
 
     def __get_plugin_by_function_name(self, function_name):
         """
