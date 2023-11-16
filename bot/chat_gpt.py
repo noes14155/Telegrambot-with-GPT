@@ -31,11 +31,9 @@ class ChatGPT:
             List[str]: The available chat models.
         """
         
-        try:
-            response = requests.get(self.fetch_models_url, headers=self.headers)
-        except Exception:
-            self.models.append('gpt-4')
-            self.models.append('gpt-3.5-turbo')
+        
+        response = requests.get(self.fetch_models_url, headers=self.headers)
+        
         if response.status_code == 200:
             models_data = response.json()
             self.models.extend(
@@ -45,6 +43,8 @@ class ChatGPT:
             )
         else:
             print(f"Failed to fetch chat models. Status code: {response.status_code}")
+            self.models.append('gpt-4')
+            self.models.append('gpt-3.5-turbo')
         if self.default_model not in self.models:
             self.models.append(self.default_model)
         return self.models
