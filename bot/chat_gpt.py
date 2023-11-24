@@ -39,7 +39,7 @@ class ChatGPT:
             self.models.extend(
                 model['id']
                 for model in models_data.get('data')
-                if "chat" in model['endpoints'][0]
+                
             )
         else:
             print(f"Failed to fetch chat models. Status code: {response.status_code}")

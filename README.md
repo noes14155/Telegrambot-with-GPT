@@ -146,8 +146,11 @@ Default value HG_TEXT2IMAGE = 'stabilityai/stable-diffusion-2-1'
 - `DEFAULT_LANG`
 Change to your language default english. If you want to translate to your own language please do so in the language_files folder make your own language.yml file and add the language to languages.yml file.        
 
-- `Plugins`
+- `PLUGINS`
 Enable or disable plugins. Default value True.    
+
+- `TTS`
+Enable or disable TTS. Default value True.    
 
 - `BOT_OWNER_ID`
 Add your userid from telegram. If empty DM enable or disable option will be disabled.     

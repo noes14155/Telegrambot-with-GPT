@@ -51,6 +51,7 @@ class BotService:
         self.HG_TEXT2IMAGE = os.environ.get("HG_TEXT2IMAGE", "stabilityai/stable-diffusion-2-1")
         self.DEFAULT_LANGUAGE = os.environ.get("DEFAULT_LANGUAGE", "en")
         self.PLUGINS = os.environ.get('PLUGINS', 'true').lower() == 'true'
+        self.TTS = os.environ.get('TTS', 'true').lower() == 'true'
         self.MAX_HISTORY = int(os.environ.get("MAX_HISTORY", 15))
         self.API_BASE = os.environ.get("API_BASE", 'https://api.naga.ac/v1')
         self.DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", 'gpt-3.5')
@@ -221,16 +222,16 @@ class BotService:
                 else:
                     continue
                 try:
-                    await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup)
+                    await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup, parse_mode='Markdown')
                     sent_text = full_text
                 except Exception:
                     continue
 
         if full_text not in ['', sent_text]:
-            await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup) 
+            await bot.edit_message_text(chat_id=call.chat.id, message_id=waiting_id, text=full_text, reply_markup=markup, parse_mode='Markdown') 
             self.cancel_flag = False
-        
-        await self.generate_tts(full_text, call, bot)
+        if self.TTS:
+            await self.generate_tts(full_text, call, bot)
         return
             
     async def generate_tts(self, full_text, call, bot):
