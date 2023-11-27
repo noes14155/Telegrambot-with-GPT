@@ -335,20 +335,16 @@ class BotService:
         user = call.from_user
         bot_messages = self.lm.local_messages(user_id=user_id)
         lang, persona, model = self.db.get_settings(user_id)
-        self.lm.available_lang["languages"].get(
-            lang,
-            self.lm.available_lang["languages"]["en"],
+        lm = self.lm.available_lang["languages"].get(lang, self.lm.available_lang["languages"]["en"])
+        history = [
+        {"role": role, "content": content}
+        for role, content in self.db.get_history(user_id)[-self.MAX_HISTORY:]
+        ]
+        prompt = (
+        bot_messages["help"] + f"{lm}."
+        if user_message in ["/start", "/help"]
+        else process_prompt if process_prompt != '' else user_message
         )
-        lm = self.lm.available_lang["languages"][lang]
-        history = []
-        if user_message in ["/start", "/help"]:
-            prompt = bot_messages["help"] + f"{lm}."
-        elif process_prompt != '':
-            prompt = process_prompt
-        else:
-            prompt = user_message
-
-
         web_text = await self.ws.extract_text_from_website(prompt)
         if web_text is not None:
             prompt = web_text
@@ -358,16 +354,12 @@ class BotService:
         EXTRA_PROMPT = bot_messages["EXTRA_PROMPT"]
         if user.first_name is not None:
             bot_messages["bot_prompt"] += f"You should address the user as '{user.first_name}'"
-        bot_messages["bot_prompt"] += f'{bot_messages["translator_prompt"]} {lm}'
-        bot_messages["bot_prompt"] += f'/n Always stay in character as {persona}'
+        bot_messages["bot_prompt"] += f'{bot_messages["translator_prompt"]} {lm}/n Always stay in character as {persona}'
         function = self.plugin.get_functions_specs() if self.PLUGINS else []
         should_exit = False
         fn_name = arguments = text =  ''
         self.db.insert_history(user_id=user_id, role="user", content=prompt)
-        rows = self.db.get_history(user_id)[-self.MAX_HISTORY:]
-        for row in rows:
-            role, content = row
-            history.append({"role": role, "content": content})
+        history.append({"role": 'user', "content": prompt})
         response_stream = self.gpt.generate_response(
             bot_messages["bot_prompt"], EXTRA_PROMPT, history,function=function, model=model
         )
@@ -396,7 +388,12 @@ class BotService:
         if should_exit:
             self.db.insert_history(user_id=user_id, role="assistant", content=text)
             return      
+        if fn_name or arguments == '':
+            yield 'unable to generate a response'
+        else:
+            await self.__function_call(fn_name, arguments, history, bot_messages, model, user_id)
 
+    async def __function_call(self, fn_name, arguments, history, bot_messages, model, user_id):
         print("Using function ",fn_name, "with arguments ", arguments)
         result = await self.plugin.call_function(fn_name,arguments)
         should_exit = False
