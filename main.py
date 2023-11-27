@@ -151,9 +151,9 @@ async def select_prompt_handler(call: types.Message, state: FSMContext):
             photo = FSInputFile(filename)
             await bot.send_photo(chat_id=call.chat.id, photo=photo)
             os.remove(filename)
-            await state.clear()
         else:
             await bot.send_message(chat_id=call.chat.id, text='Failed to generate image')
+        await state.clear()
     else:
         response = 'Please select size for the image'
         await state.update_data(prompt=call.text)
